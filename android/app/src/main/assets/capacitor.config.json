@@ -1,0 +1,11 @@
+{
+	"appId": "com.melophile.app",
+	"appName": "Melophile",
+	"webDir": "dist",
+	"plugins": {
+		"LocalNotifications": {
+			"smallIcon": "ic_notification",
+			"iconColor": "#6366F1"
+		}
+	}
+}

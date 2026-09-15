@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Feature (Local Notifications): Android requires status-bar notification
+     icons to be a flat white silhouette on a transparent background (the
+     OS applies its own tint/background) -- a full-color launcher icon
+     either renders as a solid white blob or fails to look right across
+     Android versions. Simple eighth-note glyph so it's still recognizably
+     "Melophile" at 24dp in the status bar. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="#FFFFFF">
+  <path
+      android:fillColor="#FF000000"
+      android:pathData="M9,18.5c0,1.38 -1.12,2.5 -2.5,2.5S4,19.88 4,18.5 5.12,16 6.5,16c0.57,0 1.08,0.19 1.5,0.51V6.5c0,-0.28 0.22,-0.5 0.5,-0.5h8c0.28,0 0.5,0.22 0.5,0.5s-0.22,0.5 -0.5,0.5H9v9.5c0,1.38 -1.12,2.5 -2.5,2.5z M9,7h7v2H9z"/>
+</vector>

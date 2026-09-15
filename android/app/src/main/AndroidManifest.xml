@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
+            android:name=".MainActivity"
+            android:label="@string/title_activity_main"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTask"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"></meta-data>
+        </provider>
+
+        <!-- Feature (Persistent playback notification): foregroundServiceType
+             is required from API 29+ (and enforced from API 34) so Android
+             knows this service is legitimately doing media playback and
+             exempts it from the background-execution limits that would
+             otherwise kill it. Must match the type passed to
+             startForeground() in PlaybackForegroundService.java. -->
+        <service
+            android:name=".PlaybackForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+    </application>
+
+    <!-- Permissions -->
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Feature (Persistent playback notification) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Feature (Native folder picker): required by
+         @capawesome/capacitor-file-picker per its own README -- note
+         pickDirectory() itself (what this app actually uses) goes through
+         Android's Storage Access Framework and doesn't strictly need
+         these, but the plugin's other methods (pickFiles/pickImages/etc.)
+         do, and Capacitor's manifest merge doesn't let us scope permission
+         declarations to only the plugin methods actually called. -->
+    <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <!-- android.permission.POST_NOTIFICATIONS is already declared by the
+         @capacitor/local-notifications plugin's own bundled manifest
+         (auto-merged at build time) -- both this service's notification
+         and the ones in lib/notifications.ts share that one runtime
+         permission grant, there's no separate permission per notification
+         source. -->
+</manifest>

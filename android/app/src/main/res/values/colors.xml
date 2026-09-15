@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Feature (Native Android/Capacitor scaffold): `cap add android`
+         generates styles.xml referencing these three colors but does NOT
+         generate this file -- building without it fails Android resource
+         linking (AAPT: "resource color/colorPrimary not found"). Matches
+         the app's default accent (src/types.ts's DEFAULT_ACCENT) so the
+         Android chrome (status bar, splash background) isn't jarringly
+         different from the in-app theme on first launch, before the user's
+         saved accent color preference has anywhere to plug in natively. -->
+    <color name="colorPrimary">#2C5FCC</color>
+    <color name="colorPrimaryDark">#1E4494</color>
+    <color name="colorAccent">#2C5FCC</color>
+</resources>
