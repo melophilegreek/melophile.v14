@@ -1,0 +1,235 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { X, Mic2, Upload, Pencil, Trash2, Loader as Loader2 } from 'lucide-react';
+import type { Song } from '../types';
+import { saveSong } from '../lib/db';
+import { isLrcText, detectLyricsFormat, parseLrc } from '../lib/lrc';
+import { getContrastText } from '../lib/color';
+
+interface Props {
+  song: Song;
+  currentTime: number;
+  accentColor: string;
+  /** Feature (Liquid Glass theme toggle): the currently playing song's
+   *  cached album-art object URL (same one the player bar uses), reused
+   *  here as a blurred backdrop so the glass panel has something to
+   *  actually reveal. Null falls back to the plain surface color. */
+  artUrl: string | null;
+  onClose: () => void;
+  /** Feature (tap-to-seek): jump playback to a synced line's timestamp when
+   *  it's tapped, same mechanism the player bar's scrub row uses. */
+  onSeek: (time: number) => void;
+  /** Called after lyrics are saved to IndexedDB, so the parent can patch its
+   *  in-memory song list / currently-playing song (mirrors AlbumArtEditModal's
+   *  `onUpdated`). */
+  onUpdated: (updated: Song) => void;
+}
+
+export function LyricsModal({ song, currentTime, accentColor, artUrl, onClose, onSeek, onUpdated }: Props) {
+  const activeRef = useRef<HTMLParagraphElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Kept as local state (rather than reading `song` directly) so a freshly
+  // imported/edited set of lyrics renders — and starts time-syncing — the
+  // instant it's saved, without waiting on a round trip through the parent.
+  const [localSong, setLocalSong] = useState(song);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setLocalSong(song);
+    setEditing(false);
+    // Intentionally keyed on song.id only: `song` is a new object reference
+    // on every parent render (patched song objects are always shallow
+    // clones), so depending on it directly would reset local edits/scroll
+    // state mid-edit even when it's still the same track.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [song.id]);
+
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (editing) setEditing(false); else onClose();
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onClose, editing]);
+
+  // BUG FIX (lyrics sync showing as plain text): this used to trust
+  // `localSong.lyricsFormat` alone, which is decided once at import time.
+  // Any song whose timestamps weren't recognized then (or that predates
+  // this field existing at all) was stuck rendering as a flat block of text
+  // -- brackets and all -- forever, even though the same content passes the
+  // exact same timestamp check used for manually-pasted lyrics below.
+  // Detecting live from the text itself makes every song self-heal the
+  // moment it has `[mm:ss.xx]`-style lines, with no re-import needed.
+  const isLrc = useMemo(() => isLrcText(localSong.lyrics), [localSong.lyrics]);
+  const lrcLines = useMemo(() => (isLrc && localSong.lyrics ? parseLrc(localSong.lyrics) : []), [isLrc, localSong.lyrics]);
+
+  const activeIndex = useMemo(() => {
+    if (!isLrc || lrcLines.length === 0) return -1;
+    let idx = -1;
+    for (let i = 0; i < lrcLines.length; i++) { if (lrcLines[i].time <= currentTime) idx = i; else break; }
+    return idx;
+  }, [isLrc, lrcLines, currentTime]);
+
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [activeIndex]);
+
+  const startEditing = () => { setDraft(localSong.lyrics ?? ''); setEditing(true); };
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setDraft(await file.text());
+  };
+
+  const persist = async (updated: Song) => {
+    setSaving(true);
+    try {
+      await saveSong(updated);
+      setLocalSong(updated);
+      onUpdated(updated);
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSave = () => {
+    const text = draft.trim();
+    if (!text) return;
+    persist({ ...localSong, lyrics: text, lyricsFormat: detectLyricsFormat(text) });
+  };
+
+  const handleRemove = () => {
+    persist({ ...localSong, lyrics: undefined, lyricsFormat: undefined });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:px-4"
+      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(var(--glass-blur-sm))' }}
+      onMouseDown={(e) => { if (e.currentTarget === e.target) onClose(); }}>
+      {/* FIX ("different black" seam above the Player Bar): this card used
+          to be a small floating box (`h-[70vh]`, centered) on every screen
+          size. On mobile, that left real empty space between the card's
+          bottom edge and the screen edge -- and since the Player Bar
+          renders above this overlay (z-[60] vs this overlay's z-50) to stay
+          usable, that empty space (and the area behind the bar's rounded
+          corners) showed this overlay's own lighter backdrop instead of the
+          card's much darker background, creating a visible seam. Matching
+          the fix already applied to the Queue panel: go edge-to-edge/full
+          height on mobile so the card's own dark background extends all
+          the way down behind the Player Bar, and keep the original smaller
+          centered floating card only on desktop, where there's no such
+          overlap to worry about. */}
+      <div className="w-full h-full md:h-[70vh] md:max-w-md md:rounded-2xl rounded-t-2xl shadow-2xl animate-slide-up flex flex-col relative overflow-hidden"
+        style={{ backdropFilter: 'blur(var(--glass-blur-lg)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))', border: '1px solid rgb(var(--fg-rgb) / var(--glass-border-alpha))', boxShadow: 'var(--shadow-panel)' }}>
+        {/* Feature (Liquid Glass theme toggle): a lyrics sheet sitting over
+            plain page background had nothing colorful behind it for the
+            glass tokens to reveal -- alpha and blur on a near-black panel
+            over a near-black backdrop just looks like a slightly softer
+            black panel. Reusing the *song's own* blurred, saturated album
+            art as the backdrop (same trick as the player bar) gives the
+            glass something to actually catch and refract, so this becomes
+            the one screen in the app where the effect is unmistakable. */}
+        {artUrl && (
+          <img src={artUrl} alt="" aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover scale-110"
+            style={{ filter: 'blur(var(--glass-blur-panel, 32px)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))', opacity: 'calc(0.55 * var(--glass-sheen, 1) + 0.06)' }} />
+        )}
+        <div className="absolute inset-0"
+          style={{ background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))' }} />
+        <div className="relative z-10 flex flex-col h-full min-h-0 p-5">
+        <div className="flex items-start justify-between mb-3 shrink-0">
+          <div className="min-w-0">
+            <h3 className="text-fg font-bold text-lg truncate">{localSong.title}</h3>
+            <p className="text-fg/40 text-xs truncate">{localSong.artist}</p>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            {!editing && localSong.lyrics && (
+              <button onClick={startEditing} className="btn-icon w-8 h-8 hover:bg-fg/10 rounded-full" title="Edit lyrics">
+                <Pencil size={15} className="text-fg/60" />
+              </button>
+            )}
+            <button onClick={editing ? () => setEditing(false) : onClose} className="btn-icon w-8 h-8 hover:bg-fg/10 rounded-full">
+              <X size={18} className="text-fg/60" />
+            </button>
+          </div>
+        </div>
+
+        {editing ? (
+          <div className="flex-1 min-h-0 flex flex-col gap-3 pb-[184px] md:pb-0">
+            <p className="text-fg/40 text-xs leading-relaxed shrink-0">
+              Paste lyrics below, or upload a .lrc / .txt file. Lines with timestamps like{' '}
+              <span className="text-fg/60 font-mono">[00:12.34]</span> sync automatically to playback.
+            </p>
+            <input ref={fileInputRef} type="file" accept=".lrc,.txt,text/plain" className="hidden" onChange={handleFile} />
+            <button onClick={() => fileInputRef.current?.click()}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-fg/5 hover:bg-fg/10 text-fg transition-colors shrink-0">
+              <Upload size={15} style={{ color: accentColor }} />
+              <span className="text-sm font-medium">Upload .lrc / .txt file</span>
+            </button>
+            <textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder={'[00:12.34]First line of the song\n[00:16.02]Next line...\n\n...or just paste plain lyrics with no timestamps'}
+              className="flex-1 min-h-0 w-full rounded-xl bg-bg/30 border border-fg/10 text-fg/85 text-sm font-mono p-3 resize-none focus:outline-none focus:border-fg/25 placeholder:text-fg/20"
+            />
+            <div className="flex items-center gap-2 shrink-0">
+              {localSong.lyrics && (
+                <button onClick={handleRemove} disabled={saving}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-red-400/80 hover:bg-red-500/15 hover:text-red-400 transition-colors text-sm font-medium disabled:opacity-40">
+                  <Trash2 size={14} /> Remove
+                </button>
+              )}
+              <div className="flex-1" />
+              <button onClick={() => setEditing(false)} disabled={saving}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-fg/50 hover:text-fg/70 transition-colors disabled:opacity-40">
+                Cancel
+              </button>
+              <button onClick={handleSave} disabled={saving || !draft.trim()}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-opacity disabled:opacity-40"
+                style={{ background: accentColor, color: getContrastText(accentColor) }}>
+                {saving && <Loader2 size={14} className="animate-spin" />} Save
+              </button>
+            </div>
+          </div>
+        ) : !localSong.lyrics ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-fg/25 gap-3">
+            <Mic2 size={36} className="text-fg/15" />
+            <p className="font-medium">No lyrics found for this song</p>
+            <button onClick={startEditing}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90"
+              style={{ background: `${accentColor}20`, color: accentColor }}>
+              <Upload size={14} /> Import lyrics
+            </button>
+          </div>
+        ) : isLrc && lrcLines.length > 0 ? (
+          <div ref={scrollAreaRef} className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1 space-y-3 py-8 pb-[184px] md:pb-8">
+            {lrcLines.map((line, i) => (
+              <p key={i} ref={i === activeIndex ? activeRef : undefined}
+                onClick={() => onSeek(line.time)}
+                className="text-center transition-all duration-200 leading-snug cursor-pointer active:opacity-60"
+                style={{
+                  color: i === activeIndex ? accentColor : 'rgb(var(--fg-rgb) / 0.35)',
+                  fontSize: i === activeIndex ? 17 : 15,
+                  fontWeight: i === activeIndex ? 700 : 500,
+                }}>
+                {line.text || '\u00A0'}
+              </p>
+            ))}
+          </div>
+        ) : (
+          <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1 pb-[184px] md:pb-0">
+            <p className="text-fg/80 text-sm leading-relaxed whitespace-pre-wrap">{localSong.lyrics}</p>
+          </div>
+        )}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,327 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Matches DEFAULT_ACCENT in types.ts — this is just the pre-hydration
+   fallback (App.tsx overwrites it from saved preferences on mount), but it
+   should still match the real default so there's no flash of the old
+   Spotify-green before that happens. */
+:root { --accent-color: #2C5FCC; }
+
+/* Feature (Light/Dark theme toggle): every surface/text/border color in the
+   app used to be a hardcoded white-on-black value (`text-white/60`,
+   `#0a0a0a`, `rgba(255,255,255,0.1)`, ...) baked directly into ~20
+   component files, with no light-mode variant anywhere. Rather than adding
+   a parallel `dark:`/`light:` class to every one of those ~500+ call sites,
+   these four variables are the single source of truth for "what does the
+   app look like right now" -- App.tsx sets `data-theme="dark"` or
+   `data-theme="light"` on <html> based on the user's saved preference
+   (default: dark, per the toggle in Settings), and every component now
+   reads color via the `fg`/`bg`/`surface`/`elevated` Tailwind tokens (see
+   tailwind.config.js) instead of literal white/black. Values are `R G B`
+   triplets (no commas) so Tailwind's `<alpha-value>` opacity syntax
+   (`rgb(var(--fg-rgb) / <alpha-value>)`) can slot an alpha in later --
+   that's also why the raw rgba()/hex overlay colors below (scrollbar,
+   range slider, glass-panel, etc.) were converted to reference these same
+   variables instead of their own separate literals. */
+:root, [data-theme="dark"] {
+  --fg-rgb: 255 255 255;       /* primary foreground: near-white text/icons/borders */
+  --bg-rgb: 10 10 12;          /* page background, matches old #0a0a0c */
+  --surface-rgb: 28 28 28;     /* modal/card background, matches old rgba(28,28,28,*) */
+  --elevated-rgb: 28 28 33;    /* raised surface (player bar etc.), matches old #1c1c21 */
+  /* Feature (Apple-style glass vibrancy): fed into every glass surface's
+     backdrop-filter as `brightness(var(--glass-brightness)) contrast(...)`,
+     alongside the existing blur+saturate. Dark blurred artwork behind a
+     panel tends to crush toward mud without a slight brightness lift --
+     this is the same trick macOS/iOS vibrancy uses to keep frosted dark
+     materials from reading as "dirty glass". Overridden to 1/1 in
+     [data-glass="off"] below so turning the effect off doesn't leave a
+     residual brightness shift on the flat panel color. */
+  --glass-brightness: 1.08;
+  --glass-contrast: 1.02;
+}
+[data-theme="light"] {
+  /* Feature (Premium light mode pass): the original light palette was a
+     flat, low-contrast gray-on-gray (bg #F6F6F8, elevated #ECECF0 -- only
+     ~10 units apart, so raised surfaces like the player bar or hover states
+     barely read as "raised"). This revised set does two things: (1) warms
+     the neutrals slightly (a hint of the accent's cool tone instead of pure
+     gray, which is what makes light UIs from Linear/Apple/Notion feel
+     "designed" rather than default-OS-gray) and (2) widens the separation
+     between bg/surface/elevated so depth is visible without needing heavy
+     shadows to do all the work. */
+  --fg-rgb: 21 21 26;           /* primary foreground: soft near-black (not pure #000, less harsh on white) */
+  --bg-rgb: 244 243 247;        /* page background: warm-cool off-white */
+  --surface-rgb: 255 255 255;   /* modal/card background: pure white for contrast against bg */
+  --elevated-rgb: 231 229 236;  /* raised surface: clearly separated from bg, not just a shade off */
+  /* Light mode's blurred backdrop is already bright, so it needs the
+     opposite correction from dark mode: a touch more contrast instead of
+     a brightness lift, or heavily-saturated light content behind the
+     panel washes out to a flat, hazy pastel instead of reading as glass. */
+  --glass-brightness: 1;
+  --glass-contrast: 1.04;
+}
+
+/* Feature (Liquid Glass theme toggle): every modal/popover/player-bar
+   surface in the app blurs and lightly tints whatever's behind it (see the
+   backdropFilter usages across App.tsx/PlayerBar.tsx/SettingsPanel.tsx/etc,
+   and .glass-panel below). Rather than hardcoding a blur radius + alpha at
+   every single call site, they all resolve through this one set of
+   variables -- App.tsx sets `data-glass="on"` or `"off"` on <html> from the
+   user's saved preference (default: on, per the toggle in Settings), and
+   toggling it off collapses every blur radius to 0 and every translucent
+   surface to fully opaque, i.e. the app's original flat-panel look.
+
+   Tuned to actually read as glass rather than "slightly soft edge": surface
+   alpha is low enough (0.72/0.66) that the saturated, heavily-blurred
+   backdrop is genuinely visible through each panel, not just implied by a
+   near-opaque tint. `--glass-accent-mix` feeds a thin, accent-tinted glow
+   into --shadow-panel below (see there) -- the one recurring "this pane is
+   catching light" cue, rather than a generic white glow, so it reads as
+   part of this app's identity instead of a stock frosted-glass effect.
+
+   Feature (Apple-style glass refinement): tuned toward the restrained,
+   almost-monochrome vibrancy of macOS/iOS materials rather than a louder
+   "gamer RGB" glass look -- stronger blur + saturate for a genuinely
+   optical, refractive quality, paired back accent tinting (14% instead of
+   20%, and only in the corner wash, never the rim) so color reads as a
+   whisper of light catching the glass rather than a colored filter over
+   it, and a slightly thinner/quieter border so the highlight in
+   .glass-surface::before and the border-top in .glass-panel do the work
+   of defining the edge instead of a flat solid-alpha ring. */
+:root, [data-glass="on"] {
+  --glass-blur-xs: 8px;     /* thumbnail badges, alpha-scroll bubble */
+  --glass-blur-sm: 16px;    /* modal scrim behind the dialog */
+  --glass-blur-md: 26px;    /* context menus / popovers */
+  --glass-blur-lg: 38px;    /* modal/panel surfaces */
+  --glass-blur-panel: 42px; /* player bar / bottom-sheet glass-panel */
+  --glass-saturate: 195%;
+  --glass-surface-alpha: 0.68;   /* modal & popover backgrounds */
+  --glass-elevated-alpha: 0.6;   /* player bar / glass-panel background */
+  --glass-sheen: 1;               /* multiplier: full specular highlight */
+  --glass-border-alpha: 0.12;
+  --glass-accent-mix: 14%;        /* how much accent color tints the panel rim glow */
+}
+[data-glass="off"] {
+  --glass-blur-xs: 0px;
+  --glass-blur-sm: 0px;
+  --glass-blur-md: 0px;
+  --glass-blur-lg: 0px;
+  --glass-blur-panel: 0px;
+  --glass-saturate: 100%;
+  --glass-surface-alpha: 1;
+  --glass-elevated-alpha: 1;
+  --glass-sheen: 0;
+  --glass-border-alpha: 0.08;
+  --glass-accent-mix: 0%;
+  /* No blur means no vibrancy correction is needed either -- pin both to
+     neutral so the flat panel color isn't left slightly brightened/
+     contrasted for no visible reason. */
+  --glass-brightness: 1;
+  --glass-contrast: 1;
+}
+
+/* Feature (Premium light mode pass): elevation shadows were pure hardcoded
+   `rgba(0,0,0,*)` values everywhere, tuned only for a near-black backdrop --
+   a heavy black drop shadow on a dark surface reads as "depth", but the
+   same shadow on a white/light-gray surface just reads as a dark smudge
+   (no soft falloff, wrong color temperature). These two tokens give each
+   theme its own elevation recipe: dark keeps the original punchy shadow +
+   glass highlight; light swaps to a much softer, cooler-neutral (fg-tinted
+   instead of pure black) shadow with a tight contact layer + a wide diffuse
+   layer, which is how elevation actually reads on light surfaces, plus a
+   crisp hairline border since shadows alone read weaker on light bg.
+   Consumed via `shadow-panel`/`shadow-lift` in tailwind.config.js and
+   directly as `var(--shadow-panel-outer)` in PlayerBar.tsx/App.tsx for the
+   couple of spots that build the value dynamically (accent-tinted rings)
+   and so can't use a static Tailwind utility class. */
+:root, [data-theme="dark"] {
+  /* Feature (Apple-style glass refinement): split the old single big
+     shadow into three depth layers, the way macOS/iOS materials actually
+     composite -- a soft top inset highlight (the "light catching the top
+     edge of the glass"), a tight near/contact shadow (a thin panel still
+     casts a crisp close shadow), and a wide, very soft far shadow (the
+     ambient occlusion that reads as "floating above the page"). Layering
+     these three reads as considered depth rather than one flat drop
+     shadow; the accent glow stays as its own faint outermost layer. */
+  --shadow-panel: 0 1.5px 0 rgb(255 255 255 / calc(0.55 * var(--glass-sheen, 1))) inset, 0 0 0 1px rgb(255 255 255 / calc(0.05 * var(--glass-sheen, 1))) inset, 0 6px 14px -8px rgba(0,0,0,0.55), 0 28px 56px -22px rgba(0,0,0,0.65), 0 0 40px -14px color-mix(in srgb, var(--accent-color) var(--glass-accent-mix, 0%), transparent);
+  --shadow-panel-outer: 0 1.5px 0 rgb(255 255 255 / calc(0.6 * var(--glass-sheen, 1))) inset, 0 0 0 1px rgb(255 255 255 / calc(0.05 * var(--glass-sheen, 1))) inset, 0 6px 16px -8px rgba(0,0,0,0.6), 0 24px 52px -20px rgba(0,0,0,0.7), 0 0 44px -14px color-mix(in srgb, var(--accent-color) var(--glass-accent-mix, 0%), transparent);
+  --shadow-lift: 0 2px 6px -3px rgba(0,0,0,0.45), 0 10px 26px -10px rgba(0,0,0,0.55);
+  --shadow-toast: 0 4px 10px -4px rgba(0,0,0,0.5), 0 14px 38px -10px rgba(0,0,0,0.6);
+}
+[data-theme="light"] {
+  --shadow-panel: 0 1.5px 0 rgb(255 255 255 / 0.9) inset, 0 0 0 1px rgb(255 255 255 / calc(0.4 * var(--glass-sheen, 1))) inset, 0 1px 2px rgb(21 21 26 / 0.05), 0 4px 10px -6px rgb(21 21 26 / 0.1), 0 22px 44px -18px rgb(21 21 26 / 0.16), 0 0 0 1px rgb(21 21 26 / 0.06), 0 0 40px -16px color-mix(in srgb, var(--accent-color) var(--glass-accent-mix, 0%), transparent);
+  --shadow-panel-outer: 0 1.5px 0 rgb(255 255 255 / 0.9) inset, 0 0 0 1px rgb(255 255 255 / calc(0.4 * var(--glass-sheen, 1))) inset, 0 1px 2px rgb(21 21 26 / 0.05), 0 4px 12px -6px rgb(21 21 26 / 0.1), 0 18px 40px -16px rgb(21 21 26 / 0.16), 0 0 0 1px rgb(21 21 26 / 0.06), 0 0 44px -16px color-mix(in srgb, var(--accent-color) var(--glass-accent-mix, 0%), transparent);
+  --shadow-lift: 0 1px 2px rgb(21 21 26 / 0.06), 0 3px 8px -4px rgb(21 21 26 / 0.08), 0 8px 20px -8px rgb(21 21 26 / 0.14);
+  --shadow-toast: 0 2px 6px -3px rgb(21 21 26 / 0.1), 0 12px 30px -8px rgb(21 21 26 / 0.18);
+}
+
+@layer base {
+  * { -webkit-tap-highlight-color: transparent; }
+  html, body, #root {
+    height: 100%; margin: 0; background-color: rgb(var(--bg-rgb)); color: rgb(var(--fg-rgb));
+    font-family: 'Inter', system-ui, sans-serif; overflow: hidden;
+  }
+  /* Feature (Premium UI pass): a barely-there fixed film grain over the
+     whole app -- the one texture choice that separates "flat dark UI" from
+     "matte hardware finish". Kept extremely subtle (2% opacity) and fixed
+     (not scrolling with content) so it reads as a material property of the
+     screen rather than a decoration on any one panel. prefers-reduced-motion
+     doesn't apply here since it's static, not animated. Uses `overlay` blend
+     mode in both themes -- lightens on dark surfaces, darkens on light ones
+     -- so the grain itself needs no theme-specific tuning. */
+  body::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+    opacity: 0.025; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  /* Professional library scroller: thin (6px) track, fully-rounded thumb,
+     transparent track so it's invisible until there's something to scroll,
+     and an accent-tinted hover to match the rest of the theme. Falls back
+     to plain fg/25 in browsers without color-mix support. */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgb(var(--fg-rgb) / 0.15); border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--accent-color) 55%, rgb(var(--fg-rgb) / 0.25)); }
+  /* Firefox: thin variant + matching track/thumb colors (no per-state hover
+     control available via this API, so it stays a static neutral tone). */
+  * { scrollbar-width: thin; scrollbar-color: rgb(var(--fg-rgb) / 0.15) transparent; }
+
+  /* Smooth-scroll every scroll container (library list, sidebar, queue,
+     stats) -- covers both wheel/touch scrolling and programmatic jumps like
+     AlphaScrollBar's scrollToIndex(), which sets scrollTop directly. */
+  html, .overflow-y-auto, .overflow-auto { scroll-behavior: smooth; }
+
+  /* FEATURE (mobile scrollbar): momentum/inertial scrolling on older iOS
+     Safari, which doesn't turn this on by default the way modern engines
+     do. Harmless everywhere else. */
+  .overflow-y-auto, .overflow-auto { -webkit-overflow-scrolling: touch; }
+
+  /* Selected text picks up the accent color instead of the browser default
+     blue, so it stays consistent with the rest of the theme. Selection text
+     stays white even in light mode since the accent color itself is dark
+     enough (user-picked, but defaults to a mid-tone blue) to need a light
+     foreground for contrast either way. */
+  ::selection { background: color-mix(in srgb, var(--accent-color) 55%, transparent); color: #fff; }
+
+  /* TASK 4 (UI polish): baseline smooth transitions for interactive
+     controls, so buttons/links/inputs feel consistent even in the handful
+     of spots that don't already carry an explicit Tailwind `transition-*`
+     utility or inline `style` transition. This sits in @layer base, so any
+     component-level transition (utility class or inline style) still wins
+     over it -- nothing here overrides e.g. SeekBar's drag-vs-click timing. */
+  button, a, input, select, textarea, [role="button"] {
+    transition-property: background-color, color, opacity, transform, box-shadow, border-color;
+    transition-duration: 200ms;
+    transition-timing-function: ease;
+  }
+}
+
+@layer components {
+  .btn-icon {
+    @apply flex items-center justify-center rounded-full transition-all duration-150 text-fg/50 hover:text-fg;
+  }
+
+  /* Feature (Premium UI pass): the shared "glass panel" treatment -- a
+     frosted, faintly-lit surface with a hairline top highlight, used by the
+     player bar and popover menus instead of a flat translucent black.
+     Meant to read as an actual pane of glass/metal catching light along one
+     edge rather than a plain semi-transparent rectangle. Swapped its
+     literal rgba(255,255,255,*)/rgba(18,18,21,*) values for the themed
+     fg/elevated variables so this panel goes from "frosted dark glass" to
+     "frosted light glass" instead of staying dark in light mode.
+  */
+  .glass-panel {
+    /* Liquid Glass: a brighter top sheen (scaled by --glass-sheen so it
+       fully disappears when the theme is off) plus a faint accent-tinted
+       wash low in the panel -- the closest a flat gradient gets to actual
+       refracted light traveling through a pane of glass, without a
+       per-frame shader. */
+    background:
+      linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 40%),
+      radial-gradient(130% 70% at 12% -10%, rgb(var(--fg-rgb) / calc(0.14 * var(--glass-sheen))), transparent 55%),
+      radial-gradient(90% 60% at 100% 120%, color-mix(in srgb, var(--accent-color) calc(var(--glass-accent-mix, 0%) * 0.6), transparent), transparent 60%),
+      rgb(var(--elevated-rgb) / var(--glass-elevated-alpha));
+    backdrop-filter: blur(var(--glass-blur-panel)) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(var(--glass-blur-panel)) saturate(var(--glass-saturate));
+    border-top: 1px solid rgb(var(--fg-rgb) / calc(var(--glass-border-alpha) * 2));
+  }
+
+  /* Feature (Liquid Glass theme toggle): shared treatment for modal/sheet
+     surfaces (Settings, confirm dialogs, context menus, the lyrics/queue
+     panels, etc). Layers the same top sheen + accent-tinted corner glow
+     over the existing surface color, all driven by the --glass-* variables
+     above so a single attribute flip resets every one of these at once. */
+  .glass-surface {
+    background:
+      linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.14 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%),
+      radial-gradient(120% 65% at 10% -10%, rgb(var(--fg-rgb) / calc(0.12 * var(--glass-sheen))), transparent 55%),
+      rgb(var(--surface-rgb) / var(--glass-surface-alpha));
+    backdrop-filter: blur(var(--glass-blur-lg)) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(var(--glass-blur-lg)) saturate(var(--glass-saturate));
+    border: 1px solid rgb(var(--fg-rgb) / var(--glass-border-alpha));
+    position: relative;
+  }
+  /* A thin, bright hairline hugging the top-left corner -- the "edge catches
+     the light" cue liquid glass surfaces have that flat translucent panels
+     don't. Purely decorative so it's excluded from hit-testing. */
+  .glass-surface::before {
+    content: '';
+    position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    padding: 1px;
+    background: linear-gradient(135deg, rgb(var(--fg-rgb) / calc(0.35 * var(--glass-sheen))), transparent 35%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+}
+
+input[type='range'] { -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer; }
+input[type='range']::-webkit-slider-runnable-track { height: 3px; border-radius: 2px; background: rgb(var(--fg-rgb) / 0.2); }
+input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; height: 12px; width: 12px; border-radius: 50%; background: rgb(var(--fg-rgb)); margin-top: -4.5px; opacity: 0; transition: opacity 0.15s; }
+input[type='range']:hover::-webkit-slider-thumb { opacity: 1; }
+input[type='range']:focus { outline: none; }
+
+@keyframes pulseBar { 0%,100% { transform: scaleY(0.35); } 50% { transform: scaleY(1); } }
+.animate-pulse-bar { animation: pulseBar 0.75s ease-in-out infinite; transform-origin: bottom; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideInRight { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+/* FIX (like/unlike toast sliding in from the right instead of straight up):
+   the Toast in App.tsx is horizontally centered with a static
+   `-translate-x-1/2` Tailwind class, but it also used the shared
+   `.animate-slide-up` animation above, whose keyframes set `transform:
+   translateY(...)`. A CSS animation's `transform` property completely
+   replaces any other transform on the element for the animation's
+   duration -- it doesn't compose with the static -translate-x-1/2 --  so
+   while the animation played, the toast's left edge (not its center) sat
+   at the 50% mark, making it appear off to the right; it only snapped to
+   its correct centered position once the 300ms animation finished and the
+   static utility class took back over. This dedicated keyframe bakes the
+   -50% horizontal centering into every frame of the animation itself, so
+   the toast only ever moves vertically, never sideways. The static
+   `-translate-x-1/2` class on the element (in App.tsx) is still needed
+   as the resting-state baseline: once the animation finishes, the
+   element's transform falls back to whatever its own classes provide, so
+   that baseline must also equal translate(-50%, 0) or the toast will jump
+   off-center right after landing. Scoped to just the toast so the plain
+   `.animate-slide-up` used by every modal (which don't need horizontal
+   centering baked in) stays untouched.
+*/
+@keyframes toastSlideUp { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.animate-fade-in { animation: fadeIn 0.25s ease-out; }
+.animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.16,1,0.3,1); }
+.animate-toast-slide-up { animation: toastSlideUp 0.3s cubic-bezier(0.16,1,0.3,1); }
+.animate-slide-in-right { animation: slideInRight 0.3s cubic-bezier(0.16,1,0.3,1); }
+
+/* FIX 3 (LONG SONG NAMES): base marquee keyframe used by MarqueeText in
+   PlayerBar.tsx. The real per-instance timing (how long it scrolls, how
+   long it pauses) is injected via a small inline <style> tag from that
+   component, because it depends on how far a given title overflows and
+   that's only known at runtime (measured with ResizeObserver). */
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(var(--marquee-distance, 0)); }
+}
