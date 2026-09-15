@@ -1,0 +1,66 @@
+name: deploy
+
+on:
+  push:
+    branches: ['main']
+  # Lets you trigger a deploy manually from the Actions tab without needing
+  # a new push.
+  workflow_dispatch:
+
+# Allow the workflow to read the repo and write to GitHub Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one deploy at a time; a new push cancels any deploy still in
+# progress rather than queuing behind it.
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        # VITE_BASE_PATH must match the repo name -- GitHub Pages serves a
+        # project site (as opposed to a user/org site named
+        # <username>.github.io) from https://<user>.github.io/<repo>/, so
+        # every asset URL Vite emits needs that `/melophile.v14/` prefix or
+        # they'll 404 once deployed. vite.config.ts falls back to '/' when
+        # this isn't set, which is correct for local dev but wrong here.
+        run: npm run build
+        env:
+          VITE_BASE_PATH: /melophile.v14/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
