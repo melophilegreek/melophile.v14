@@ -118,7 +118,22 @@ function VirtualListInner<T>(
       const el = containerRef.current;
       if (!el) return;
       const clamped = Math.max(0, Math.min(index, offsets.length - 2));
-      el.scrollTop = offsets[clamped] ?? 0;
+      // FIX (delay when dragging the alpha scrollbar): this container
+      // carries `.overflow-y-auto`, and index.css sets `scroll-behavior:
+      // smooth` globally on that class. Assigning `el.scrollTop` still
+      // goes through that CSS scroll-behavior (it's not just a "jump" the
+      // way it looks -- the spec routes the scrollTop setter through the
+      // same smooth-scroll machinery as scrollTo()). AlphaScrollBar calls
+      // scrollToIndex on essentially every animation frame while dragging,
+      // so each frame was interrupting the previous frame's still-running
+      // smooth-scroll animation with a new one -- the list was perpetually
+      // chasing a moving target instead of tracking the finger, which
+      // reads as a lagging/delayed scroll. `scrollTo({..., behavior:
+      // 'instant'})` bypasses the CSS property explicitly, so each drag
+      // update lands immediately; smooth-scroll elsewhere on the page
+      // (anything else using `.overflow-y-auto`/`.overflow-auto`) is
+      // untouched.
+      el.scrollTo({ top: offsets[clamped] ?? 0, behavior: 'instant' });
     },
     getScrollTop() { return containerRef.current?.scrollTop ?? 0; },
   }), [offsets]);
