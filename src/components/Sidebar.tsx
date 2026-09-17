@@ -68,20 +68,19 @@ export function Sidebar({
   return (
     <div className="h-full flex flex-col py-4 px-3 overflow-y-auto"
       style={{
-        /* Feature (Liquid Glass theme toggle): this was the one primary
-           surface in the app still using a flat, fully-opaque background
-           (no alpha, no blur) -- on mobile it's a full-height drawer sliding
-           in over the library list, exactly the kind of overlay this theme
-           is meant for, so it gets the same sheen + accent-tinted rim
-           treatment as every modal/popover, via the shared --glass-*
-           variables (see index.css). CSS `background` on a scrollable
-           element paints behind its content and doesn't scroll away with
-           it, so this needs no extra wrapper. */
-        background: 'radial-gradient(130% 70% at 8% -10%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))',
-        backdropFilter: 'blur(var(--glass-blur-lg)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))',
-        WebkitBackdropFilter: 'blur(var(--glass-blur-lg)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))',
-        borderRight: '1px solid rgb(var(--fg-rgb) / var(--glass-border-alpha))',
-        boxShadow: 'var(--shadow-panel-outer)',
+        /* FIX (Liquid Glass showing through as a blurry/translucent panel
+           over the library list behind it): on mobile this drawer slides
+           in over the song list, so the glass blur/gradient-sheen/
+           translucent-surface treatment let that list bleed through behind
+           it (see the screenshot -- "Sort", the A-Z strip, and song rows
+           are all still faintly visible/blurred underneath the nav
+           items), which read as unpolished rather than "glass". Matches
+           the same flat, opaque, professional treatment NewPlaylistModal
+           now uses: a solid surface color, no backdrop-filter, no gradient
+           sheen, one quiet hairline border instead of a glass rim. */
+        background: 'rgb(var(--surface-rgb))',
+        borderRight: '1px solid rgb(var(--fg-rgb) / 0.08)',
+        boxShadow: '2px 0 12px rgba(0,0,0,0.15)',
       }}>
       <div className="flex items-center gap-2 px-2 mb-6">
         <img src={`${import.meta.env.BASE_URL}icons/logo-transparent.png`} alt="" className="w-8 h-8 shrink-0" />
