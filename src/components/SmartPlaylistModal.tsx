@@ -6,6 +6,7 @@ import {
   defaultSmartConfig, defaultSmartRule, evaluateSmartPlaylist,
   SMART_FIELD_LABELS, operatorsForField, OPERATOR_LABELS,
 } from '../lib/smartPlaylist';
+import { useVisualViewportRect } from '../hooks/useVisualViewportRect';
 
 interface Props {
   songs: Song[];
@@ -73,6 +74,16 @@ export function SmartPlaylistModal({ songs, likedIds, accentColor, initialName, 
     return null;
   };
 
+  // FIX (panel bottom -- Add rule / Save / Cancel -- cut off behind the
+  // keyboard on mobile): same root cause as NewPlaylistModal/AddSongsModal
+  // (see useVisualViewportRect). `max-h-[85vh]` has the identical problem
+  // as `fixed inset-0` -- `vh` is the full layout viewport, which doesn't
+  // shrink for the on-screen keyboard, so 85% of it can still be taller
+  // than the space actually left above the keyboard. Sizing the overlay to
+  // the live visual-viewport rect, and capping the panel to a percentage
+  // of *that*, keeps it (and its Save button) above the keyboard.
+  const viewportRect = useVisualViewportRect();
+
   return (
     // FIX (modal overlapping/hidden behind the sidebar on mobile): same
     // issue and same fix as NewPlaylistModal in App.tsx -- this opens from
@@ -80,10 +91,10 @@ export function SmartPlaylistModal({ songs, likedIds, accentColor, initialName, 
     // launch while the mobile drawer (z-[70]) is still open. z-[1100]
     // matches ConfirmDialog/DeletePlaylistDialog's convention of always
     // rendering above every drawer/overlay.
-    <div className="fixed inset-0 z-[1100] flex items-center justify-center px-4"
-      style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(var(--glass-blur-sm))' }}
+    <div className="fixed left-0 right-0 z-[1100] flex items-center justify-center px-4"
+      style={{ top: viewportRect.top, height: viewportRect.height, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(var(--glass-blur-sm))' }}
       onMouseDown={(e) => { if (e.currentTarget === e.target) onClose(); }}>
-      <div className="w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl shadow-2xl animate-slide-up"
+      <div className="w-full max-w-lg max-h-[85%] flex flex-col rounded-2xl shadow-2xl animate-slide-up"
         style={{ background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))', backdropFilter: 'blur(var(--glass-blur-lg)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))', border: '1px solid rgb(var(--fg-rgb) / var(--glass-border-alpha))', boxShadow: 'var(--shadow-panel)' }}>
         <div className="flex items-center gap-2 px-6 pt-6 pb-2 shrink-0">
           <Sparkles size={18} style={{ color: accentColor }} />
