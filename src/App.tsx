@@ -30,6 +30,7 @@ import {
 } from './lib/notifications';
 
 import { usePlayer } from './hooks/usePlayer';
+import { useVisualViewportRect } from './hooks/useVisualViewportRect';
 import { player } from './lib/player';
 import { EQ_FLAT, type EQBandKey, type EQState } from './lib/eqPresets';
 import {
@@ -144,35 +145,12 @@ function NewPlaylistModal({ accentColor, onCreated, onClose }: {
     return () => window.removeEventListener('keydown', h);
   }, [onClose]);
 
-  // FIX (modal centered behind the on-screen keyboard on mobile): `fixed
-  // inset-0` sizes this overlay to the full *layout* viewport, which on
-  // Android Chrome/WebView does not shrink when the keyboard opens -- the
-  // overlay (and the `items-center` content inside it) stayed centered in
-  // the full-height viewport, i.e. centered *behind* the keyboard, so the
-  // input sat half-covered and the Cancel/Create buttons were pushed off
-  // the visible screen entirely (see the bug screenshot: buttons not
-  // reachable until the keyboard is dismissed). `window.visualViewport`
-  // reports the actual visible area once the keyboard has resized it, so
-  // we track its height/offset and size the overlay to that instead of the
-  // full window -- the modal now re-centers itself in whatever space is
-  // actually visible above the keyboard, the same way Cancel/Create being
-  // unreachable was fixed for other dialogs in this file.
-  const [viewportRect, setViewportRect] = useState(() => ({
-    height: window.visualViewport?.height ?? window.innerHeight,
-    top: window.visualViewport?.offsetTop ?? 0,
-  }));
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const update = () => setViewportRect({ height: vv.height, top: vv.offsetTop });
-    vv.addEventListener('resize', update);
-    vv.addEventListener('scroll', update);
-    update();
-    return () => {
-      vv.removeEventListener('resize', update);
-      vv.removeEventListener('scroll', update);
-    };
-  }, []);
+  // FIX (modal centered behind the on-screen keyboard on mobile), now
+  // shared: see useVisualViewportRect for the full explanation (this was
+  // the original inline version of that fix; AddSongsModal needed the
+  // identical logic afterwards, so it's now a shared hook and this just
+  // calls it).
+  const viewportRect = useVisualViewportRect();
 
   return (
     /* FIX (modal overlapping/hidden behind the sidebar on mobile): this is
