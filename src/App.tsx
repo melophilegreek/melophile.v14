@@ -144,6 +144,36 @@ function NewPlaylistModal({ accentColor, onCreated, onClose }: {
     return () => window.removeEventListener('keydown', h);
   }, [onClose]);
 
+  // FIX (modal centered behind the on-screen keyboard on mobile): `fixed
+  // inset-0` sizes this overlay to the full *layout* viewport, which on
+  // Android Chrome/WebView does not shrink when the keyboard opens -- the
+  // overlay (and the `items-center` content inside it) stayed centered in
+  // the full-height viewport, i.e. centered *behind* the keyboard, so the
+  // input sat half-covered and the Cancel/Create buttons were pushed off
+  // the visible screen entirely (see the bug screenshot: buttons not
+  // reachable until the keyboard is dismissed). `window.visualViewport`
+  // reports the actual visible area once the keyboard has resized it, so
+  // we track its height/offset and size the overlay to that instead of the
+  // full window -- the modal now re-centers itself in whatever space is
+  // actually visible above the keyboard, the same way Cancel/Create being
+  // unreachable was fixed for other dialogs in this file.
+  const [viewportRect, setViewportRect] = useState(() => ({
+    height: window.visualViewport?.height ?? window.innerHeight,
+    top: window.visualViewport?.offsetTop ?? 0,
+  }));
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => setViewportRect({ height: vv.height, top: vv.offsetTop });
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    update();
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
+
   return (
     /* FIX (modal overlapping/hidden behind the sidebar on mobile): this is
        reachable straight from the "+" button inside the Sidebar itself, so
@@ -154,21 +184,37 @@ function NewPlaylistModal({ accentColor, onCreated, onClose }: {
        the convention ConfirmDialog/DeletePlaylistDialog already use below
        for exactly this reason: always above every drawer/overlay in the
        app, not just the ones open at the time this was written. */
-    <div className="fixed inset-0 z-[1100] flex items-center justify-center px-4"
-      style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(var(--glass-blur-sm))' }}
+    /* FIX (Liquid Glass didn't read as "professional" here): the rest of
+       the app's floating panels lean into "Liquid Glass" -- blurred/
+       saturated backdrop, a gradient sheen overlay standing in for a
+       specular highlight, a multi-layer glow shadow tinted with the
+       accent color. On a small centered confirmation dialog, with no
+       content behind it to justify the see-through effect, that read as
+       busy/decorative rather than functional. This swaps the glass token
+       set for a flat system-alert treatment instead: an opaque surface
+       (no backdrop-filter, no gradient sheen), a single hairline border,
+       one quiet shadow, and a bottom button row split by a divider --
+       the pattern iOS/macOS alerts use, where the chrome recedes and the
+       title/input carry the dialog. */
+    <div className="fixed left-0 right-0 z-[1100] flex items-center justify-center px-4"
+      style={{ top: viewportRect.top, height: viewportRect.height, background: 'rgba(0,0,0,0.4)' }}
       onMouseDown={(e) => { if (e.currentTarget === e.target) onClose(); }}>
-      <div className="w-80 rounded-2xl p-6 shadow-2xl animate-slide-up"
-        style={{ background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))', backdropFilter: 'blur(var(--glass-blur-lg)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))', border: '1px solid rgb(var(--fg-rgb) / var(--glass-border-alpha))', boxShadow: 'var(--shadow-panel)' }}>
-        <h3 className="text-fg font-bold text-lg mb-4">New Playlist</h3>
-        <input ref={inputRef} type="text" placeholder="Playlist name" value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && name.trim()) { onCreated(name.trim()); onClose(); } }}
-          className="w-full bg-fg/5 border border-fg/10 rounded-xl px-4 py-3 text-fg text-sm placeholder-fg/30 focus:outline-none focus:border-fg/25 mb-4" />
-        <div className="flex gap-2">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl bg-fg/5 hover:bg-fg/10 text-fg/70 text-sm transition-colors">Cancel</button>
+      <div className="w-72 rounded-[14px] overflow-hidden animate-alert-pop"
+        style={{ background: 'rgb(var(--surface-rgb))', border: '1px solid rgb(var(--fg-rgb) / 0.08)', boxShadow: '0 12px 36px -8px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.12)' }}>
+        <div className="px-5 pt-5 pb-4">
+          <h3 className="text-fg font-semibold text-[17px] text-center mb-4">New Playlist</h3>
+          <input ref={inputRef} type="text" placeholder="Playlist name" value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && name.trim()) { onCreated(name.trim()); onClose(); } }}
+            className="w-full bg-fg/[0.06] border border-fg/10 rounded-[10px] px-3.5 py-2.5 text-fg text-[15px] text-center placeholder-fg/35 focus:outline-none focus:border-fg/25" />
+        </div>
+        <div className="flex border-t border-fg/10">
+          <button onClick={onClose}
+            className="flex-1 py-3 text-[15px] text-fg/70 hover:bg-fg/5 active:bg-fg/10 transition-colors">Cancel</button>
+          <div className="w-px bg-fg/10" />
           <button onClick={() => { if (name.trim()) { onCreated(name.trim()); onClose(); } }} disabled={!name.trim()}
-            className="flex-1 py-2.5 rounded-xl font-semibold text-sm transition-all hover:opacity-90 disabled:opacity-40"
-            style={{ background: accentColor, color: getContrastText(accentColor), boxShadow: `0 6px 20px -6px ${accentColor}80` }}>Create</button>
+            className="flex-1 py-3 text-[15px] font-semibold hover:bg-fg/5 active:bg-fg/10 transition-colors disabled:opacity-35 disabled:hover:bg-transparent"
+            style={{ color: accentColor }}>Create</button>
         </div>
       </div>
     </div>

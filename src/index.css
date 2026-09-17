@@ -313,6 +313,15 @@ input[type='range']:focus { outline: none; }
 @keyframes toastSlideUp { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
 .animate-fade-in { animation: fadeIn 0.25s ease-out; }
 .animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.16,1,0.3,1); }
+/* FIX (New Playlist dialog dropped the "Liquid Glass" treatment for an
+   Apple system-alert look): every other sheet in the app slides up, which
+   reads right for a panel anchored to an edge, but a small centered
+   confirmation dialog sliding up from below reads as an Android/Material
+   bottom-sheet habit, not the settle-in-place scale+fade an iOS/macOS
+   alert uses. Scoped to its own class so only NewPlaylistModal opts in --
+   every other `.animate-slide-up` consumer is untouched. */
+@keyframes alertPop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+.animate-alert-pop { animation: alertPop 0.18s cubic-bezier(0.2,0.9,0.3,1.1); }
 .animate-toast-slide-up { animation: toastSlideUp 0.3s cubic-bezier(0.16,1,0.3,1); }
 .animate-slide-in-right { animation: slideInRight 0.3s cubic-bezier(0.16,1,0.3,1); }
 
