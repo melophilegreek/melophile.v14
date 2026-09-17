@@ -162,23 +162,29 @@ function NewPlaylistModal({ accentColor, onCreated, onClose }: {
        the convention ConfirmDialog/DeletePlaylistDialog already use below
        for exactly this reason: always above every drawer/overlay in the
        app, not just the ones open at the time this was written. */
-    /* FIX (Liquid Glass didn't read as "professional" here): the rest of
-       the app's floating panels lean into "Liquid Glass" -- blurred/
-       saturated backdrop, a gradient sheen overlay standing in for a
-       specular highlight, a multi-layer glow shadow tinted with the
-       accent color. On a small centered confirmation dialog, with no
-       content behind it to justify the see-through effect, that read as
-       busy/decorative rather than functional. This swaps the glass token
-       set for a flat system-alert treatment instead: an opaque surface
-       (no backdrop-filter, no gradient sheen), a single hairline border,
-       one quiet shadow, and a bottom button row split by a divider --
-       the pattern iOS/macOS alerts use, where the chrome recedes and the
-       title/input carry the dialog. */
+    /* FIX (Apple-alert layout kept, but back on the shared Liquid Glass
+       tokens): the previous version of this comment hardcoded a flat,
+       always-opaque surface here to move away from "glass". That
+       overlooked that Liquid Glass is a real, user-facing Settings toggle
+       (SettingsPanel.tsx, `liquidGlass`/`data-glass`) driving the
+       --glass-* variables every other panel in the app reads from --
+       hardcoding this one panel meant the toggle silently stopped doing
+       anything here, whichever way the user had it set. Back on
+       `--glass-surface-alpha`/`--glass-blur-lg`/etc. like every other
+       modal, so this dialog now turns glassy or flat along with the rest
+       of the app, in sync with the user's actual setting. The iOS/macOS
+       alert *layout* (centered title, divided button row, scale-pop
+       entrance) is unrelated to the glass-vs-flat question and stays. */
     <div className="fixed left-0 right-0 z-[1100] flex items-center justify-center px-4"
-      style={{ top: viewportRect.top, height: viewportRect.height, background: 'rgba(0,0,0,0.4)' }}
+      style={{ top: viewportRect.top, height: viewportRect.height, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(var(--glass-blur-sm))' }}
       onMouseDown={(e) => { if (e.currentTarget === e.target) onClose(); }}>
       <div className="w-72 rounded-[14px] overflow-hidden animate-alert-pop"
-        style={{ background: 'rgb(var(--surface-rgb))', border: '1px solid rgb(var(--fg-rgb) / 0.08)', boxShadow: '0 12px 36px -8px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.12)' }}>
+        style={{
+          background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))',
+          backdropFilter: 'blur(var(--glass-blur-lg)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))',
+          border: '1px solid rgb(var(--fg-rgb) / var(--glass-border-alpha))',
+          boxShadow: 'var(--shadow-panel)',
+        }}>
         <div className="px-5 pt-5 pb-4">
           <h3 className="text-fg font-semibold text-[17px] text-center mb-4">New Playlist</h3>
           <input ref={inputRef} type="text" placeholder="Playlist name" value={name}
