@@ -175,14 +175,27 @@ function NewPlaylistModal({ accentColor, onCreated, onClose }: {
        of the app, in sync with the user's actual setting. The iOS/macOS
        alert *layout* (centered title, divided button row, scale-pop
        entrance) is unrelated to the glass-vs-flat question and stays. */
+    /* FIX (glass effect read as "a plain dark box"): the scrim behind this
+       panel is a 70%-opaque black fill. `backdrop-filter` samples
+       everything already painted behind an element, including that scrim
+       -- so by the time this panel's own frosted-glass blur runs, it's
+       mostly blurring near-black, which is why translucency wasn't
+       visible: there was nothing colorful left behind it to see through
+       to. Two changes, both still gated by `--glass-sheen` (0 when Liquid
+       Glass is off in Settings, so the flat/opaque fallback is untouched):
+       a lighter scrim lets real color/detail from the page reach this
+       panel's blur, and the panel's own blur/saturate/highlight are
+       pushed further than the shared tokens (which have to stay
+       restrained since they're shared by every other panel) so this
+       dialog reads unambiguously as glass rather than a soft-edged box. */
     <div className="fixed left-0 right-0 z-[1100] flex items-center justify-center px-4"
-      style={{ top: viewportRect.top, height: viewportRect.height, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(var(--glass-blur-sm))' }}
+      style={{ top: viewportRect.top, height: viewportRect.height, background: 'rgba(0,0,0,calc(0.55 - 0.15 * var(--glass-sheen, 0)))', backdropFilter: 'blur(var(--glass-blur-sm))' }}
       onMouseDown={(e) => { if (e.currentTarget === e.target) onClose(); }}>
       <div className="w-72 rounded-[14px] overflow-hidden animate-alert-pop"
         style={{
-          background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))',
-          backdropFilter: 'blur(var(--glass-blur-lg)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))',
-          border: '1px solid rgb(var(--fg-rgb) / var(--glass-border-alpha))',
+          background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.22 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.26 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 35%), rgb(var(--surface-rgb) / calc(var(--glass-surface-alpha) - 0.12 * var(--glass-sheen, 0)))',
+          backdropFilter: 'blur(calc(var(--glass-blur-lg) + 14px * var(--glass-sheen, 0))) saturate(calc(var(--glass-saturate) + 50% * var(--glass-sheen, 0))) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))',
+          border: '1px solid rgb(var(--fg-rgb) / calc(var(--glass-border-alpha) + 0.06 * var(--glass-sheen, 0)))',
           boxShadow: 'var(--shadow-panel)',
         }}>
         <div className="px-5 pt-5 pb-4">
