@@ -62,7 +62,7 @@ export function AddSongsModal({ playlist, songs, accentColor, onClose, onConfirm
     <div className="fixed left-0 right-0 z-50 flex items-center justify-center"
       style={{ top: viewportRect.top, height: viewportRect.height, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(var(--glass-blur-sm))' }}
       onMouseDown={(e) => { if (e.currentTarget === e.target) onClose(); }}>
-      <div className="w-full max-w-md h-[32rem] max-h-[85%] rounded-2xl p-5 shadow-2xl animate-slide-up flex flex-col"
+      <div className="w-full max-w-md h-[32rem] max-h-[85%] rounded-2xl p-5 shadow-2xl animate-slide-up flex flex-col overflow-hidden"
         style={{ background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))', backdropFilter: 'blur(var(--glass-blur-lg)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))', border: '1px solid rgb(var(--fg-rgb) / var(--glass-border-alpha))', boxShadow: 'var(--shadow-panel)' }}>
         <div className="flex items-center justify-between mb-3 shrink-0">
           <h3 className="text-fg font-bold text-lg">Add Songs</h3>
