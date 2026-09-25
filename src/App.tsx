@@ -178,29 +178,31 @@ function NewPlaylistModal({ accentColor, onCreated, onClose }: {
     /* Scrim: kept as-is per feedback ("bg is ok") -- lighter than the
        original 0.7 opaque black so the page's real color/detail survives
        behind the panel instead of being crushed to near-black first. */
-    /* FIX (panel amplification reverted): the previous pass pushed this
-       panel's own blur/saturate/sheen/alpha well past the shared
-       --glass-* tokens to make the translucency unmistakable. Per
-       feedback the plainer surface -- driven straight by the same
-       --glass-* tokens every other modal uses, no extra local boost --
-       was the one that actually looked right; only the lighter scrim
-       above stays from that round. */
+    /* FIX (matched to reference photo exactly): the reference shows a
+       fully flat, single-tone surface -- no top-lit gradient/sheen, no
+       visible border rim, and noticeably rounder corners on both the
+       dialog and the input field. This intentionally stops reading
+       --glass-* here (a flat opaque `--elevated-rgb` fill, no border, no
+       backdrop-filter on the panel itself) rather than driving those
+       properties down toward zero through the shared tokens, so this
+       dialog now looks the same regardless of the Liquid Glass Settings
+       toggle -- a deliberate, explicit exception after being pointed at
+       this exact reference three times, not the earlier unintentional
+       hardcoding this file's history warns about above. */
     <div className="fixed left-0 right-0 z-[1100] flex items-center justify-center px-4"
       style={{ top: viewportRect.top, height: viewportRect.height, background: 'rgba(0,0,0,calc(0.55 - 0.15 * var(--glass-sheen, 0)))', backdropFilter: 'blur(var(--glass-blur-sm))' }}
       onMouseDown={(e) => { if (e.currentTarget === e.target) onClose(); }}>
-      <div className="w-72 rounded-[14px] overflow-hidden animate-alert-pop"
+      <div className="w-72 rounded-[24px] overflow-hidden animate-alert-pop"
         style={{
-          background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))',
-          backdropFilter: 'blur(var(--glass-blur-lg)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))',
-          border: '1px solid rgb(var(--fg-rgb) / var(--glass-border-alpha))',
-          boxShadow: 'var(--shadow-panel)',
+          background: 'rgb(var(--elevated-rgb))',
+          boxShadow: '0 16px 40px -10px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2)',
         }}>
         <div className="px-5 pt-5 pb-4">
           <h3 className="text-fg font-semibold text-[17px] text-center mb-4">New Playlist</h3>
           <input ref={inputRef} type="text" placeholder="Playlist name" value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && name.trim()) { onCreated(name.trim()); onClose(); } }}
-            className="w-full bg-fg/[0.06] border border-fg/10 rounded-[10px] px-3.5 py-2.5 text-fg text-[15px] text-center placeholder-fg/35 focus:outline-none focus:border-fg/25" />
+            className="w-full bg-fg/[0.06] border border-fg/10 rounded-full px-4 py-2.5 text-fg text-[15px] text-center placeholder-fg/35 focus:outline-none focus:border-fg/25" />
         </div>
         <div className="flex border-t border-fg/10">
           <button onClick={onClose}
