@@ -253,11 +253,16 @@ export function AlphaScrollBar({ songs, accentColor, listRef, indexOffset = 0, h
                with a small drop shadow for legibility) rather than
                flooding the whole tile -- consistent with how the rest of
                the UI uses accent as a small deliberate accent, not a fill. */
-            background: `linear-gradient(180deg, rgb(255 255 255 / calc(0.14 * var(--glass-sheen, 1))), rgb(255 255 255 / 0) 55%), rgb(var(--elevated-rgb) / var(--glass-elevated-alpha))`,
-            boxShadow: `0 4px 14px -4px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / calc(0.22 * var(--glass-sheen, 1)))`,
-            border: `1px solid rgb(255 255 255 / calc(0.14 * var(--glass-sheen, 1) + 0.06))`,
-            backdropFilter: 'blur(var(--glass-blur-xs)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))',
-            WebkitBackdropFilter: 'blur(var(--glass-blur-xs)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))',
+            /* FIX (flattened to match New Playlist dialog): same
+               treatment as the popovers/dialogs elsewhere -- flat
+               --elevated-rgb fill, no gradient sheen, no backdrop-filter.
+               (Superseding the "Liquid Glass theme toggle" comment above,
+               which intentionally matched this to the app's glass
+               language -- that's exactly the look being moved away from
+               now, app-wide.) */
+            background: 'rgb(var(--elevated-rgb))',
+            boxShadow: '0 4px 14px -4px rgb(0 0 0 / 0.5)',
+            border: '1px solid rgb(var(--fg-rgb) / 0.1)',
           }}
         >
           {activeLetter}
