@@ -141,8 +141,13 @@ export function LyricsModal({ song, currentTime, accentColor, artUrl, onClose, o
             className="absolute inset-0 w-full h-full object-cover scale-110"
             style={{ filter: 'blur(var(--glass-blur-panel, 32px)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))', opacity: 'calc(0.55 * var(--glass-sheen, 1) + 0.06)' }} />
         )}
+        {/* FIX (Liquid Glass barely visible with the toggle on): bumped
+            this tint layer's sheen the same way as the Queue panel/Sidebar
+            above -- the blurred-album-art layer above stays as originally
+            tuned (that one was already deliberately strong), this is just
+            the flat tint sitting on top of it. */}
         <div className="absolute inset-0"
-          style={{ background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))' }} />
+          style={{ background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.22 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.26 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 35%), rgb(var(--surface-rgb) / calc(var(--glass-surface-alpha) - 0.12 * var(--glass-sheen, 0)))' }} />
         <div className="relative z-10 flex flex-col h-full min-h-0 p-5">
         <div className="flex items-start justify-between mb-3 shrink-0">
           <div className="min-w-0">

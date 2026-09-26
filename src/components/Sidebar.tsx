@@ -82,10 +82,15 @@ export function Sidebar({
            glass surfaces), and when it's off these variables already
            resolve to the same flat/opaque values this hardcoded version
            forced unconditionally. */
-        background: 'radial-gradient(130% 70% at 8% -10%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))',
-        backdropFilter: 'blur(var(--glass-blur-lg)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))',
-        WebkitBackdropFilter: 'blur(var(--glass-blur-lg)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))',
-        borderRight: '1px solid rgb(var(--fg-rgb) / var(--glass-border-alpha))',
+        /* FIX (Liquid Glass barely visible with the toggle on): boosted
+           sheen/blur/saturate locally, same fix and same reasoning as the
+           Queue panel above and the earlier New Playlist dialog -- still
+           entirely driven by --glass-sheen, so the Settings toggle's
+           off-state fallback is unchanged. */
+        background: 'radial-gradient(130% 70% at 8% -10%, rgb(var(--fg-rgb) / calc(0.22 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.26 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 35%), rgb(var(--surface-rgb) / calc(var(--glass-surface-alpha) - 0.12 * var(--glass-sheen, 0)))',
+        backdropFilter: 'blur(calc(var(--glass-blur-lg) + 14px * var(--glass-sheen, 0))) saturate(calc(var(--glass-saturate) + 50% * var(--glass-sheen, 0))) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))',
+        WebkitBackdropFilter: 'blur(calc(var(--glass-blur-lg) + 14px * var(--glass-sheen, 0))) saturate(calc(var(--glass-saturate) + 50% * var(--glass-sheen, 0))) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))',
+        borderRight: '1px solid rgb(var(--fg-rgb) / calc(var(--glass-border-alpha) + 0.06 * var(--glass-sheen, 0)))',
         boxShadow: 'var(--shadow-panel-outer)',
       }}>
       <div className="flex items-center gap-2 px-2 mb-6">
