@@ -266,8 +266,8 @@ function SleepTimerMenu({ accentColor, endsAt, endOfTrack, onSet, align }: {
       </button>
       {open && menuPos && createPortal(
         <div ref={menuRef}
-          className="fixed w-48 rounded-xl overflow-hidden shadow-2xl border border-fg/10 z-50 animate-fade-in"
-          style={{ top: menuPos.top, left: menuPos.left, background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))', backdropFilter: 'blur(var(--glass-blur-md)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))' }}>
+          className="fixed w-48 rounded-2xl overflow-hidden shadow-2xl z-50 animate-fade-in"
+          style={{ top: menuPos.top, left: menuPos.left, background: 'rgb(var(--elevated-rgb))', boxShadow: '0 16px 40px -10px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2)' }}>
           <div className="p-1">
             {remaining && (
               <div className="px-3 py-1.5 text-xs text-fg/40">Stops in {remaining}</div>
@@ -362,8 +362,8 @@ function PlaybackSpeedMenu({ accentColor, rate, preservePitch, onSetRate, onSetP
       </button>
       {open && menuPos && createPortal(
         <div ref={menuRef}
-          className="fixed w-44 rounded-xl overflow-hidden shadow-2xl border border-fg/10 z-50 animate-fade-in"
-          style={{ top: menuPos.top, left: menuPos.left, background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))', backdropFilter: 'blur(var(--glass-blur-md)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))' }}>
+          className="fixed w-44 rounded-2xl overflow-hidden shadow-2xl z-50 animate-fade-in"
+          style={{ top: menuPos.top, left: menuPos.left, background: 'rgb(var(--elevated-rgb))', boxShadow: '0 16px 40px -10px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2)' }}>
           <div className="p-1">
             <div className="px-3 py-1.5 text-xs text-fg/40">Playback speed</div>
             {presets.map((p) => (
@@ -579,8 +579,14 @@ function PlayerOptionsMenu({
           // max-h uses menuMaxHeight (clamped to the Now Playing bar's top
           // edge in reposition() above) instead of a flat 80vh, so the menu
           // scrolls internally rather than rendering behind the bar.
-          className="fixed w-56 rounded-xl overflow-hidden shadow-2xl border border-fg/10 z-[70] animate-fade-in overflow-y-auto"
-          style={{ top: menuPos.top, left: menuPos.left, maxHeight: menuMaxHeight ?? '80vh', background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))', backdropFilter: 'blur(var(--glass-blur-md)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))' }}>
+          // FIX (flattened to match New Playlist dialog): same treatment
+          // requested there -- flat --elevated-rgb fill, no border, no
+          // gradient sheen, no backdrop-filter -- applied here since this
+          // popover was pointed out by screenshot as one of the areas
+          // still on the old glass look. Like NewPlaylistModal, this now
+          // looks the same regardless of the Liquid Glass Settings toggle.
+          className="fixed w-56 rounded-2xl overflow-hidden shadow-2xl z-[70] animate-fade-in overflow-y-auto"
+          style={{ top: menuPos.top, left: menuPos.left, maxHeight: menuMaxHeight ?? '80vh', background: 'rgb(var(--elevated-rgb))', boxShadow: '0 16px 40px -10px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2)' }}>
           <div className="p-1">
             {/* Playback speed */}
             <button onClick={() => setExpandedSection((s) => (s === 'speed' ? null : 'speed'))}
@@ -911,8 +917,8 @@ export function PlayerBar({
             </button>
             {shuffleActive && <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full" style={{ background: accentColor }} />}
             {showShuffleMenu && (
-              <div className="absolute bottom-10 left-0 w-44 rounded-xl overflow-hidden shadow-2xl border border-fg/10 z-50 animate-fade-in"
-                style={{ background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))', backdropFilter: 'blur(var(--glass-blur-md)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))' }}>
+              <div className="absolute bottom-10 left-0 w-44 rounded-2xl overflow-hidden shadow-2xl z-50 animate-fade-in"
+                style={{ background: 'rgb(var(--elevated-rgb))', boxShadow: '0 16px 40px -10px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2)' }}>
                 <div className="p-1">
                   {(['off', 'view', 'library'] as ShuffleMode[]).map((mode) => (
                     <button key={mode} onClick={() => { onShuffleModeChange(mode); setShowShuffleMenu(false); }}
@@ -1020,8 +1026,8 @@ export function PlayerBar({
               </button>
               {shuffleActive && <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full" style={{ background: accentColor }} />}
               {showShuffleMenu && (
-                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-44 rounded-xl overflow-hidden shadow-2xl border border-fg/10 z-50 animate-fade-in"
-                  style={{ background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))', backdropFilter: 'blur(var(--glass-blur-md)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))' }}>
+                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-44 rounded-2xl overflow-hidden shadow-2xl z-50 animate-fade-in"
+                  style={{ background: 'rgb(var(--elevated-rgb))', boxShadow: '0 16px 40px -10px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2)' }}>
                   <div className="p-1">
                     {(['off', 'view', 'library'] as ShuffleMode[]).map((mode) => (
                       <button key={mode} onClick={() => { onShuffleModeChange(mode); setShowShuffleMenu(false); }}

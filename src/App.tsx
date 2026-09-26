@@ -122,10 +122,12 @@ function Toast({ message, accentColor }: { message: string; accentColor: string 
     // message instead of a barely-there caption.
     <div className="fixed bottom-[192px] md:bottom-24 left-1/2 -translate-x-1/2 z-50 animate-toast-slide-up flex items-center gap-2.5"
       style={{
-        background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))',
-        backdropFilter: 'blur(var(--glass-blur-md)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))', border: '1px solid rgb(var(--fg-rgb) / 0.12)', borderRadius: 999,
+        // FIX (flattened to match New Playlist dialog): flat --elevated-rgb
+        // fill, no gradient sheen, no backdrop-filter.
+        background: 'rgb(var(--elevated-rgb))',
+        border: '1px solid rgb(var(--fg-rgb) / 0.12)', borderRadius: 999,
         padding: '12px 22px', color: 'rgb(var(--fg-rgb))', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap',
-        boxShadow: `var(--shadow-toast), 0 0 0 1px ${accentColor}20, 0 0 24px -4px ${accentColor}40`,
+        boxShadow: `0 16px 40px -10px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2), 0 0 0 1px ${accentColor}20, 0 0 24px -4px ${accentColor}40`,
       }}>
       <span className="w-2 h-2 rounded-full shrink-0" style={{ background: accentColor, boxShadow: `0 0 8px ${accentColor}` }} />
       {message}
@@ -237,8 +239,12 @@ function ConfirmDialog({ title, message, confirmLabel, onCancel, onConfirm }: {
     <div className="fixed inset-0 z-[1100] flex items-center justify-center px-4"
       style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(var(--glass-blur-sm))' }}
       onMouseDown={(e) => { if (e.currentTarget === e.target) onCancel(); }}>
-      <div className="w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-slide-up"
-        style={{ background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))', backdropFilter: 'blur(var(--glass-blur-lg)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))', border: '1px solid rgb(var(--fg-rgb) / var(--glass-border-alpha))', boxShadow: 'var(--shadow-panel)' }}>
+      {/* FIX (flattened to match New Playlist dialog): flat --elevated-rgb
+          fill, no border, no gradient sheen, no backdrop-filter. This is
+          the shared ConfirmDialog component, so every caller of it gets
+          this treatment automatically. */}
+      <div className="w-full max-w-sm rounded-[24px] p-6 shadow-2xl animate-slide-up"
+        style={{ background: 'rgb(var(--elevated-rgb))', boxShadow: '0 16px 40px -10px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2)' }}>
         <h3 className="text-fg font-bold text-lg mb-2">{title}</h3>
         <p className="text-fg/50 text-sm mb-5 leading-snug">{message}</p>
         <div className="flex gap-2">
@@ -269,8 +275,10 @@ function ImportFailuresDialog({ failures, onClose }: {
     <div className="fixed inset-0 z-[1100] flex items-center justify-center px-4"
       style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(var(--glass-blur-sm))' }}
       onMouseDown={(e) => { if (e.currentTarget === e.target) onClose(); }}>
-      <div className="w-full max-w-sm max-h-[70vh] flex flex-col rounded-2xl p-6 shadow-2xl animate-slide-up"
-        style={{ background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))', backdropFilter: 'blur(var(--glass-blur-lg)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))', border: '1px solid rgb(var(--fg-rgb) / var(--glass-border-alpha))', boxShadow: 'var(--shadow-panel)' }}>
+      {/* FIX (flattened to match New Playlist dialog): flat --elevated-rgb
+          fill, no border, no gradient sheen, no backdrop-filter. */}
+      <div className="w-full max-w-sm max-h-[70vh] flex flex-col rounded-[24px] p-6 shadow-2xl animate-slide-up"
+        style={{ background: 'rgb(var(--elevated-rgb))', boxShadow: '0 16px 40px -10px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2)' }}>
         <h3 className="text-fg font-bold text-lg mb-1 shrink-0">
           {failures.length} file{failures.length !== 1 ? 's' : ''} couldn't be imported
         </h3>
@@ -367,8 +375,12 @@ function SortMenu({ sortBy, sortDir, accentColor, onChange }: {
       </button>
       {open && menuPos && createPortal(
         <div ref={menuRef}
-          className="fixed w-44 rounded-xl overflow-hidden shadow-2xl border border-fg/10 z-50 p-1 animate-fade-in"
-          style={{ top: menuPos.top, left: menuPos.left, background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))', backdropFilter: 'blur(var(--glass-blur-md)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))' }}>
+          // FIX (flattened to match New Playlist dialog): flat
+          // --elevated-rgb fill, no border, no gradient sheen, no
+          // backdrop-filter -- called out by screenshot. Always flat now,
+          // independent of the Liquid Glass Settings toggle.
+          className="fixed w-44 rounded-2xl overflow-hidden shadow-2xl z-50 p-1 animate-fade-in"
+          style={{ top: menuPos.top, left: menuPos.left, background: 'rgb(var(--elevated-rgb))', boxShadow: '0 16px 40px -10px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2)' }}>
           {options.map((opt) => (
             <button key={opt.key}
               onClick={() => {
@@ -441,8 +453,12 @@ function DeletePlaylistDialog({ playlist, onCancel, onConfirm }: {
       style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(var(--glass-blur-sm))' }}
       onMouseDown={(e) => { if (e.currentTarget === e.target) onCancel(); }}
       onClick={(e) => e.stopPropagation()}>
-      <div className="w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-slide-up"
-        style={{ background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))', backdropFilter: 'blur(var(--glass-blur-lg)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))', border: '1px solid rgb(var(--fg-rgb) / var(--glass-border-alpha))', boxShadow: 'var(--shadow-panel)' }}>
+      {/* FIX (flattened to match New Playlist dialog): flat --elevated-rgb
+          fill, no border, no gradient sheen, no backdrop-filter -- called
+          out by screenshot. Always flat now, independent of the Liquid
+          Glass Settings toggle, same as NewPlaylistModal. */}
+      <div className="w-full max-w-sm rounded-[24px] p-6 shadow-2xl animate-slide-up"
+        style={{ background: 'rgb(var(--elevated-rgb))', boxShadow: '0 16px 40px -10px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2)' }}>
         <h3 className="text-fg font-bold text-lg mb-2">Delete playlist?</h3>
         <p className="text-fg/50 text-sm mb-5 leading-snug">
           <span className="text-fg/80 font-medium">{playlist.name}</span> ({playlist.songIds.length} {playlist.songIds.length === 1 ? 'song' : 'songs'}) will be permanently deleted. Your songs themselves won't be removed from your library. This can't be undone.
@@ -1934,8 +1950,12 @@ export default function App() {
                     for why the old absolute version was invisible. */}
                 {showImportMenu && importMenuPos && createPortal(
                   <div ref={importMenuContentRef}
-                    className="fixed w-52 rounded-xl overflow-hidden shadow-2xl border border-fg/10 z-50 animate-fade-in"
-                    style={{ top: importMenuPos.top, left: importMenuPos.left, background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))', backdropFilter: 'blur(var(--glass-blur-md)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))' }}>
+                    // FIX (flattened to match New Playlist dialog): flat
+                    // --elevated-rgb fill, no border, no gradient sheen, no
+                    // backdrop-filter -- called out by screenshot. Always
+                    // flat now, independent of the Liquid Glass toggle.
+                    className="fixed w-52 rounded-2xl overflow-hidden shadow-2xl z-50 animate-fade-in"
+                    style={{ top: importMenuPos.top, left: importMenuPos.left, background: 'rgb(var(--elevated-rgb))', boxShadow: '0 16px 40px -10px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2)' }}>
                     <div className="p-1">
                       {/* Folder import */}
                       <label className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-fg/80 hover:bg-fg/10 text-sm transition-colors cursor-pointer"
@@ -2380,8 +2400,11 @@ export default function App() {
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4"
           style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(var(--glass-blur-xs))' }}
           onMouseDown={(e) => { if (e.currentTarget === e.target) setShowBulkPlaylistMenu(false); }}>
-          <div className="w-full max-w-xs rounded-2xl p-4 shadow-2xl animate-slide-up"
-            style={{ background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))', backdropFilter: 'blur(var(--glass-blur-lg)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))', border: '1px solid rgb(var(--fg-rgb) / var(--glass-border-alpha))' }}>
+          {/* FIX (flattened to match New Playlist dialog): flat
+              --elevated-rgb fill, no border, no gradient sheen, no
+              backdrop-filter. */}
+          <div className="w-full max-w-xs rounded-[24px] p-4 shadow-2xl animate-slide-up"
+            style={{ background: 'rgb(var(--elevated-rgb))', boxShadow: '0 16px 40px -10px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2)' }}>
             <h3 className="text-fg font-semibold text-sm mb-3">
               Add {selectedIds.size} song{selectedIds.size !== 1 ? 's' : ''} to playlist
             </h3>
@@ -2492,8 +2515,17 @@ export default function App() {
               seam); the list's own bottom padding (see the `pb-[184px]`
               added inside QueuePanel) keeps its rows from being visually
               hidden under the bar instead. */}
+          {/* FIX (Liquid Glass barely visible with the toggle on): same
+              root cause as the earlier New Playlist dialog fix -- these
+              are the shared --glass-* tokens, tuned deliberately subtle,
+              over the app's mostly-dark backgrounds, so there's little
+              color for the blur to reveal. Boosted sheen/blur/saturate
+              locally here (still all multiplied by --glass-sheen, so
+              turning the Settings toggle off still collapses this to the
+              flat/opaque fallback) so the panel reads unmistakably as
+              glass rather than a plain dark strip. */}
           <div className="w-full max-w-sm h-full animate-slide-in-right md:animate-slide-up md:h-auto md:max-h-[80vh]"
-            style={{ background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))', backdropFilter: 'blur(var(--glass-blur-lg)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))', borderLeft: '1px solid rgb(var(--fg-rgb) / var(--glass-border-alpha))', maxWidth: '480px' }}>
+            style={{ background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.22 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.26 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 35%), rgb(var(--surface-rgb) / calc(var(--glass-surface-alpha) - 0.12 * var(--glass-sheen, 0)))', backdropFilter: 'blur(calc(var(--glass-blur-lg) + 14px * var(--glass-sheen, 0))) saturate(calc(var(--glass-saturate) + 50% * var(--glass-sheen, 0))) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))', borderLeft: '1px solid rgb(var(--fg-rgb) / calc(var(--glass-border-alpha) + 0.06 * var(--glass-sheen, 0)))', maxWidth: '480px' }}>
             <QueuePanel
               queue={upcomingSongs}
               userQueueLen={userQueueLen}
