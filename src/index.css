@@ -36,11 +36,12 @@
      alongside the existing blur+saturate. Dark blurred artwork behind a
      panel tends to crush toward mud without a slight brightness lift --
      this is the same trick macOS/iOS vibrancy uses to keep frosted dark
-     materials from reading as "dirty glass". Overridden to 1/1 in
-     [data-glass="off"] below so turning the effect off doesn't leave a
-     residual brightness shift on the flat panel color. */
-  --glass-brightness: 1.08;
-  --glass-contrast: 1.02;
+     materials from reading as "dirty glass". Named "-base" here and
+     blended toward neutral (1/1) by --glass-intensity below, so turning
+     the slider down doesn't leave a residual brightness shift on an
+     increasingly flat panel color. */
+  --glass-brightness-base: 1.08;
+  --glass-contrast-base: 1.02;
 }
 [data-theme="light"] {
   /* Feature (Premium light mode pass): the original light palette was a
@@ -60,27 +61,33 @@
      opposite correction from dark mode: a touch more contrast instead of
      a brightness lift, or heavily-saturated light content behind the
      panel washes out to a flat, hazy pastel instead of reading as glass. */
-  --glass-brightness: 1;
-  --glass-contrast: 1.04;
+  --glass-brightness-base: 1;
+  --glass-contrast-base: 1.04;
 }
 
-/* Feature (Liquid Glass theme toggle): every modal/popover/player-bar
+/* FEATURE (Liquid Glass intensity slider): every modal/popover/player-bar
    surface in the app blurs and lightly tints whatever's behind it (see the
    backdropFilter usages across App.tsx/PlayerBar.tsx/SettingsPanel.tsx/etc,
    and .glass-panel below). Rather than hardcoding a blur radius + alpha at
    every single call site, they all resolve through this one set of
-   variables -- App.tsx sets `data-glass="on"` or `"off"` on <html> from the
-   user's saved preference (default: on, per the toggle in Settings), and
-   toggling it off collapses every blur radius to 0 and every translucent
-   surface to fully opaque, i.e. the app's original flat-panel look.
+   variables, all driven by the single `--glass-intensity` custom property
+   (0..1) that App.tsx sets directly on <html> from the Settings slider
+   (default 1, i.e. 100%). This replaces an earlier on/off-only version
+   (a `data-glass="on"|"off"` attribute selecting between two fixed
+   blocks) with a continuous one, so "some areas look glassy, others
+   don't" is now just a matter of moving the slider rather than a binary
+   switch -- every surface scales blur/saturation/opacity/sheen together
+   and proportionally, at any point between fully flat (0) and fully
+   glass (1).
 
-   Tuned to actually read as glass rather than "slightly soft edge": surface
-   alpha is low enough (0.72/0.66) that the saturated, heavily-blurred
-   backdrop is genuinely visible through each panel, not just implied by a
-   near-opaque tint. `--glass-accent-mix` feeds a thin, accent-tinted glow
-   into --shadow-panel below (see there) -- the one recurring "this pane is
-   catching light" cue, rather than a generic white glow, so it reads as
-   part of this app's identity instead of a stock frosted-glass effect.
+   Tuned to actually read as glass rather than "slightly soft edge" at
+   full intensity: surface alpha is low enough (0.68/0.6) that the
+   saturated, heavily-blurred backdrop is genuinely visible through each
+   panel, not just implied by a near-opaque tint. `--glass-accent-mix`
+   feeds a thin, accent-tinted glow into --shadow-panel below (see there)
+   -- the one recurring "this pane is catching light" cue, rather than a
+   generic white glow, so it reads as part of this app's identity instead
+   of a stock frosted-glass effect.
 
    Feature (Apple-style glass refinement): tuned toward the restrained,
    almost-monochrome vibrancy of macOS/iOS materials rather than a louder
@@ -91,36 +98,21 @@
    it, and a slightly thinner/quieter border so the highlight in
    .glass-surface::before and the border-top in .glass-panel do the work
    of defining the edge instead of a flat solid-alpha ring. */
-:root, [data-glass="on"] {
-  --glass-blur-xs: 8px;     /* thumbnail badges, alpha-scroll bubble */
-  --glass-blur-sm: 16px;    /* modal scrim behind the dialog */
-  --glass-blur-md: 26px;    /* context menus / popovers */
-  --glass-blur-lg: 38px;    /* modal/panel surfaces */
-  --glass-blur-panel: 42px; /* player bar / bottom-sheet glass-panel */
-  --glass-saturate: 195%;
-  --glass-surface-alpha: 0.68;   /* modal & popover backgrounds */
-  --glass-elevated-alpha: 0.6;   /* player bar / glass-panel background */
-  --glass-sheen: 1;               /* multiplier: full specular highlight */
-  --glass-border-alpha: 0.12;
-  --glass-accent-mix: 14%;        /* how much accent color tints the panel rim glow */
-}
-[data-glass="off"] {
-  --glass-blur-xs: 0px;
-  --glass-blur-sm: 0px;
-  --glass-blur-md: 0px;
-  --glass-blur-lg: 0px;
-  --glass-blur-panel: 0px;
-  --glass-saturate: 100%;
-  --glass-surface-alpha: 1;
-  --glass-elevated-alpha: 1;
-  --glass-sheen: 0;
-  --glass-border-alpha: 0.08;
-  --glass-accent-mix: 0%;
-  /* No blur means no vibrancy correction is needed either -- pin both to
-     neutral so the flat panel color isn't left slightly brightened/
-     contrasted for no visible reason. */
-  --glass-brightness: 1;
-  --glass-contrast: 1;
+:root {
+  --glass-intensity: 1; /* 0..1 -- set inline on <html> by App.tsx from the Settings slider (0-100) */
+  --glass-blur-xs: calc(8px * var(--glass-intensity));     /* thumbnail badges, alpha-scroll bubble */
+  --glass-blur-sm: calc(16px * var(--glass-intensity));    /* modal scrim behind the dialog */
+  --glass-blur-md: calc(26px * var(--glass-intensity));    /* context menus / popovers */
+  --glass-blur-lg: calc(38px * var(--glass-intensity));    /* modal/panel surfaces */
+  --glass-blur-panel: calc(42px * var(--glass-intensity)); /* player bar / bottom-sheet glass-panel */
+  --glass-saturate: calc(100% + 95% * var(--glass-intensity));
+  --glass-surface-alpha: calc(1 - 0.32 * var(--glass-intensity));   /* modal & popover backgrounds: 1 (flat) down to 0.68 (full glass) */
+  --glass-elevated-alpha: calc(1 - 0.4 * var(--glass-intensity));   /* player bar / glass-panel background: 1 down to 0.6 */
+  --glass-sheen: var(--glass-intensity);                            /* multiplier: specular highlight strength */
+  --glass-border-alpha: calc(0.08 + 0.04 * var(--glass-intensity));
+  --glass-accent-mix: calc(14% * var(--glass-intensity));           /* how much accent color tints the panel rim glow */
+  --glass-brightness: calc(1 + (var(--glass-brightness-base) - 1) * var(--glass-intensity));
+  --glass-contrast: calc(1 + (var(--glass-contrast-base) - 1) * var(--glass-intensity));
 }
 
 /* Feature (Premium light mode pass): elevation shadows were pure hardcoded

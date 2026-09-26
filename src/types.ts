@@ -136,11 +136,18 @@ export interface Preferences {
    *  a plain progress line) on mobile only -- desktop is unaffected
    *  regardless of this setting. Defaults to 'normal' when unset. */
   playerBarStyle?: PlayerBarStyle;
-  /** Feature (Liquid Glass theme toggle): when true, every modal/popover/
-   *  player-bar surface gets the frosted, saturated, top-lit "glass" look
-   *  (see the --glass-* variables in index.css). When false, those same
-   *  surfaces fall back to solid, opaque, unblurred panels. Defaults to
-   *  true -- the app's current look -- when unset. */
+  /** Feature (Liquid Glass intensity slider): replaces the old on/off
+   *  `liquidGlass` toggle with a 0-100 strength that drives
+   *  `--glass-intensity` (see index.css), so every modal/popover/
+   *  player-bar surface scales its blur/saturation/sheen/opacity
+   *  continuously instead of snapping between two fixed looks. 0 is the
+   *  old "off" (flat/opaque), 100 is the old "on". Defaults to 100 when
+   *  unset. `liquidGlass` (old boolean) is read once as a migration
+   *  fallback for users who saved prefs before this field existed --
+   *  false -> 0, true/absent -> 100 -- but is no longer written to. */
+  glassIntensity?: number;
+  /** @deprecated superseded by `glassIntensity`; kept only so existing
+   *  saved preferences can be migrated on load. */
   liquidGlass?: boolean;
 }
 

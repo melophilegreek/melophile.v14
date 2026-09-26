@@ -165,7 +165,7 @@ interface Props {
    *  more of that backdrop actually shows through -- a real sense of a
    *  glass pane over the art, not just a soft-edged color block. When
    *  false, the scrim goes back to its original, fully-opaque strength. */
-  liquidGlass: boolean;
+  glassIntensity: number;
 }
 
 // Feature (Sleep timer): small popover menu shared by desktop/mobile layouts,
@@ -701,7 +701,7 @@ export function PlayerBar({
   hasLyrics, onOpenLyrics, sleepTimerEndsAt, sleepTimerEndOfTrack, onSetSleepTimer,
   repeatMode, onSetRepeat,
   playbackRate, preservePitch, onSetPlaybackRate, onSetPreservePitch,
-  theme, playerBarStyle, liquidGlass,
+  theme, playerBarStyle, glassIntensity,
 }: Props) {
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
   const bg = currentSong ? gradientFor(currentSong.title, theme) : 'linear-gradient(135deg, rgb(var(--elevated-rgb)), rgb(var(--bg-rgb)))';
@@ -732,6 +732,32 @@ export function PlayerBar({
     const r = e.currentTarget.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
     onSeek(pct * duration);
+  };
+  // BUG FIX (swipe doesn't work on the minimized bar): swipe-to-skip was
+  // only wired up on the 12px-tall progress line at the very bottom edge
+  // -- swiping anywhere else on the bar (the album art, the title, the
+  // majority of what's actually visible) did nothing, which is why it
+  // read as broken rather than just hard to find. This second pair of
+  // handlers goes on the *whole* minimized-bar row and only ever reacts
+  // to a genuine horizontal swipe past the threshold; a small-movement
+  // release (a normal tap) is deliberately left alone here so it falls
+  // through to whatever was actually pressed underneath (the play/pause
+  // button, etc.) instead of stealing the tap. Tap-to-seek stays exactly
+  // where it was, scoped to the progress line's own handlers above.
+  const miniRowGesture = useRef<{ startX: number; startY: number } | null>(null);
+  const onMiniRowPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    miniRowGesture.current = { startX: e.clientX, startY: e.clientY };
+  };
+  const onMiniRowPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const start = miniRowGesture.current;
+    miniRowGesture.current = null;
+    if (!start) return;
+    const dx = e.clientX - start.startX;
+    const dy = e.clientY - start.startY;
+    if (Math.abs(dx) > MINI_SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)) {
+      if (dx < 0) onNext(); else onPrev();
+    }
   };
   // Play/pause icons and the queue-count badge sit on an accentColor
   // background -- pick black or white per the *current* accent instead of
@@ -789,11 +815,12 @@ export function PlayerBar({
           and needs the opposite: a light wash instead of a dark one. Tied to
           the same --surface-rgb token the rest of the theme system uses
           (see index.css) rather than a second hardcoded color.
-          Feature (Liquid Glass theme toggle): eased back further (roughly
-          -35%) when liquidGlass is on so the saturated, blurred art behind
-          it actually reads as glass rather than being nearly covered by a
-          flat scrim -- back to the original full strength when it's off. */}
-      <div className="absolute inset-0" style={{ background: `rgb(var(--surface-rgb) / ${(theme === 'light' ? 0.72 : 0.55) * (liquidGlass ? 0.64 : 1)})` }} />
+          Feature (Liquid Glass intensity slider): eased back further
+          (roughly -36% at full intensity) as glassIntensity increases, so
+          the saturated, blurred art behind it actually reads as glass
+          rather than being nearly covered by a flat scrim -- back to the
+          original full strength at 0. */}
+      <div className="absolute inset-0" style={{ background: `rgb(var(--surface-rgb) / ${(theme === 'light' ? 0.72 : 0.55) * (1 - 0.36 * (glassIntensity / 100))})` }} />
 
       {/* ── MOBILE MINIMIZED LAYOUT (<768px) ── */}
       {/* Feature (Minimized Now Playing bar): compact single-row bar for
@@ -803,11 +830,17 @@ export function PlayerBar({
           progress line sits flush along the bottom edge of the card rather
           than reusing <SeekBar>, since this mode is meant to be a compact
           summary bar; it's still interactive though -- tap to seek, swipe to
-          skip prev/next (see onMiniBarPointerDown/Up below). Pairs with the
+          skip prev/next -- across the whole row via onMiniRowPointerDown/Up,
+          not just the thin progress line (see the bug-fix comment on that
+          pair further up). Pairs with the
           shorter h-[68px] mobile container height set in App.tsx for this
           mode. */}
       {playerBarStyle === 'minimized' && (
-        <div className="md:hidden relative h-full flex items-center gap-3 px-4">
+        <div className="md:hidden relative h-full flex items-center gap-3 px-4"
+          style={{ touchAction: 'pan-y' }}
+          onPointerDown={onMiniRowPointerDown}
+          onPointerUp={onMiniRowPointerUp}
+          onPointerCancel={() => { miniRowGesture.current = null; }}>
           <div className="w-11 h-11 rounded-lg shrink-0 overflow-hidden flex items-center justify-center ring-1 ring-fg/10 shadow-lift"
             style={{ background: currentSong ? placeholderBackground(accentColor) : 'rgb(var(--elevated-rgb))' }}>
             {showArt ? <img src={artUrl} alt="" className="w-full h-full object-cover" onError={handleArtError} />

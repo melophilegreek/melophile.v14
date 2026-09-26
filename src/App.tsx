@@ -509,12 +509,14 @@ export default function App() {
   // (see index.css). Defaults to 'dark' -- the app's original look -- and
   // is overwritten below once saved preferences load.
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  // Feature (Liquid Glass theme toggle): drives `document.documentElement`'s
-  // `data-glass` attribute, which every frosted/blurred surface in the app
-  // resolves through (see the --glass-* variables in index.css). Defaults
-  // to true -- the app's current look -- and is overwritten below once
-  // saved preferences load.
-  const [liquidGlass, setLiquidGlass] = useState(true);
+  // FIX (Liquid Glass on/off toggle -> intensity slider): "some areas
+  // look glassy, others don't" kept coming up because a binary on/off
+  // can't answer "make it more visible everywhere" -- there's no middle
+  // ground to reach for. Replaced with a 0-100 strength that sets
+  // `--glass-intensity` directly (see index.css), so every glass surface
+  // in the app scales together continuously. Defaults to 100 -- the old
+  // "on" look.
+  const [glassIntensity, setGlassIntensity] = useState(100);
   // Feature (Row size): controls song row height + thumbnail/text scale
   // across Library, playlists, artist/album views, search, etc.
   const [rowSize, setRowSize] = useState<RowSize>('comfortable');
@@ -712,7 +714,7 @@ export default function App() {
     setRowSize(prefs.rowSize ?? 'comfortable');
     setPlayerBarStyle(prefs.playerBarStyle ?? 'normal');
     setTheme(prefs.theme ?? 'dark');
-    setLiquidGlass(prefs.liquidGlass ?? true);
+    setGlassIntensity(prefs.glassIntensity ?? (prefs.liquidGlass === false ? 0 : 100));
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
@@ -740,12 +742,13 @@ export default function App() {
   // that actually flips the whole app's palette.
   useEffect(() => { document.documentElement.setAttribute('data-theme', theme); }, [theme]);
 
-  // Feature (Liquid Glass theme toggle): every frosted/blurred surface in
-  // the app reads from the --glass-* CSS variables (see index.css), scoped
-  // under `[data-glass="on"]` / `[data-glass="off"]`. Setting the attribute
-  // here is the one place that actually turns the glass effect on or off
-  // app-wide.
-  useEffect(() => { document.documentElement.setAttribute('data-glass', liquidGlass ? 'on' : 'off'); }, [liquidGlass]);
+  // FIX (Liquid Glass intensity slider): every glass surface in the app
+  // reads from the --glass-* CSS variables (see index.css), all derived
+  // from this one `--glass-intensity` custom property (0..1). Setting it
+  // directly here -- rather than a discrete `data-glass="on"|"off"`
+  // attribute selecting between two fixed blocks -- is what makes the
+  // Settings slider continuous instead of a toggle.
+  useEffect(() => { document.documentElement.style.setProperty('--glass-intensity', String(glassIntensity / 100)); }, [glassIntensity]);
 
   // ── Listening time tracking: accumulate minutes while audio is actually playing ──
   useEffect(() => {
@@ -1506,10 +1509,10 @@ export default function App() {
     await savePreferences({ theme: t });
   }, []);
 
-  // Feature (Liquid Glass theme toggle): passed down to SettingsPanel.
-  const handleToggleLiquidGlass = useCallback(async (v: boolean) => {
-    setLiquidGlass(v);
-    await savePreferences({ liquidGlass: v });
+  // Feature (Liquid Glass intensity slider): passed down to SettingsPanel.
+  const handleGlassIntensityChange = useCallback(async (v: number) => {
+    setGlassIntensity(v);
+    await savePreferences({ glassIntensity: v });
   }, []);
 
   // Feature (OS notifications): turning this on is the explicit user
@@ -1630,7 +1633,7 @@ export default function App() {
     // value is accurate here (unlike the initial load).
     setAccentColor(resolveAccentColor(prefs.accentColor, theme)); setManualAccentColor(prefs.accentColor);
     setAutoTheme(prefs.autoTheme ?? false);
-    setLiquidGlass(prefs.liquidGlass ?? true);
+    setGlassIntensity(prefs.glassIntensity ?? (prefs.liquidGlass === false ? 0 : 100));
     const perm = await notificationPermissionAsync();
     setNotifPermission(perm);
     setOsNotifications((prefs.osNotifications ?? false) && perm === 'granted');
@@ -2285,7 +2288,7 @@ export default function App() {
             onSetPlaybackRate={(r) => { player.setPlaybackRate(r); savePreferences({ playbackRate: r }); }}
             onSetPreservePitch={(p) => { player.setPreservePitch(p); savePreferences({ preservePitch: p }); }}
             playerBarStyle={playerBarStyle}
-            liquidGlass={liquidGlass}
+            glassIntensity={glassIntensity}
           />
         </div>
       </div>
@@ -2298,8 +2301,8 @@ export default function App() {
           onAccentChange={handleAccentChange}
           theme={theme}
           onSetTheme={handleSetTheme}
-          liquidGlass={liquidGlass}
-          onToggleLiquidGlass={handleToggleLiquidGlass}
+          glassIntensity={glassIntensity}
+          onGlassIntensityChange={handleGlassIntensityChange}
           autoTheme={autoTheme}
           onToggleAutoTheme={handleToggleAutoTheme}
           rowSize={rowSize}

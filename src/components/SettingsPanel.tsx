@@ -51,8 +51,8 @@ interface Props {
    *  popover, and player-bar surfaces get the frosted/saturated "glass"
    *  treatment; when off, those same surfaces fall back to solid, opaque,
    *  unblurred panels. */
-  liquidGlass: boolean;
-  onToggleLiquidGlass: (v: boolean) => void;
+  glassIntensity: number;
+  onGlassIntensityChange: (v: number) => void;
   /** Feature (Dynamic theming): when on, the accent color automatically
    *  follows the dominant color of whatever's currently playing album art
    *  instead of the manually-picked color below. */
@@ -114,7 +114,7 @@ interface Props {
 }
 
 export function SettingsPanel({
-  accentColor, manualAccentColor, onAccentChange, onClose, theme, onSetTheme, liquidGlass, onToggleLiquidGlass, autoTheme, onToggleAutoTheme, rowSize, onRowSizeChange, playerBarStyle, onPlayerBarStyleChange, songCount, onDeleteAllSongs, onRescanArt, artRescan,
+  accentColor, manualAccentColor, onAccentChange, onClose, theme, onSetTheme, glassIntensity, onGlassIntensityChange, autoTheme, onToggleAutoTheme, rowSize, onRowSizeChange, playerBarStyle, onPlayerBarStyleChange, songCount, onDeleteAllSongs, onRescanArt, artRescan,
   crossfadeSeconds, onCrossfadeChange, eq, onEQChange, onEQPreset, onExportBackup, onImportBackupFile,
   autoRescanSupported, autoRescanEnabled, autoRescanFolderName, onEnableAutoRescan, onDisableAutoRescan,
   osNotifications, onToggleOSNotifications, onSendTestNotification, notificationsSupported, notifPermission,
@@ -268,27 +268,30 @@ export function SettingsPanel({
           </div>
         </div>
 
-        {/* Feature (Liquid Glass theme toggle): frosted, blurred, top-lit
-            surfaces (Settings itself, popovers, the player bar, dialogs)
-            versus flat, solid, opaque ones -- a single on/off switch that
-            drives the --glass-* CSS variables (see index.css). Sits right
-            under the dark/light control since it's the other "what does
-            the whole app look like" choice; defaults to on. */}
-        <button
-          onClick={() => onToggleLiquidGlass(!liquidGlass)}
-          className="w-full flex items-center justify-between gap-2 py-2.5 px-3 rounded-xl border border-fg/10 text-sm font-medium transition-colors hover:bg-fg/5 mb-2.5"
-        >
-          <span className="flex items-center gap-2 text-fg/70 text-left">
-            <Droplets size={15} />
-            <span>
-              Liquid Glass
-              <span className="block text-[11px] font-normal text-fg/35 mt-0.5">Frosted, translucent panels throughout the app</span>
+        {/* FIX (Liquid Glass on/off toggle -> intensity slider): a binary
+            switch had no answer for "it's too subtle in some areas" --
+            there was nowhere to go between the two fixed looks. This
+            drives --glass-intensity (see index.css) continuously, so 0 is
+            the old "off" (flat/opaque) and 100 is the old "on", with every
+            value between blending blur/saturation/opacity/sheen together
+            proportionally across every glass surface in the app. Sits
+            right under the dark/light control since it's the other "what
+            does the whole app look like" choice; defaults to 100. */}
+        <div className="w-full py-2.5 px-3 rounded-xl border border-fg/10 mb-2.5">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <span className="flex items-center gap-2 text-fg/70 text-left text-sm font-medium">
+              <Droplets size={15} />
+              <span>
+                Liquid Glass
+                <span className="block text-[11px] font-normal text-fg/35 mt-0.5">Frosted, translucent panels throughout the app</span>
+              </span>
             </span>
-          </span>
-          <span className="w-9 h-5 rounded-full relative transition-colors shrink-0" style={{ background: liquidGlass ? accentColor : 'rgb(var(--fg-rgb) / 0.15)' }}>
-            <span className="absolute top-0.5 w-4 h-4 rounded-full bg-fg transition-all" style={{ left: liquidGlass ? 18 : 2 }} />
-          </span>
-        </button>
+            <span className="text-fg/40 text-xs tabular-nums shrink-0">{glassIntensity === 0 ? 'Off' : `${glassIntensity}%`}</span>
+          </div>
+          <Slider value={glassIntensity} min={0} max={100} step={5}
+            onChange={onGlassIntensityChange}
+            accentColor={accentColor} ariaLabel="Liquid Glass intensity" className="w-full" />
+        </div>
 
         {/* Feature (Dynamic theming): dominant-color-from-album-art
             auto-theming, sitting just above the manual color picker since
