@@ -213,10 +213,11 @@ export function SettingsPanel({
     <div ref={overlayRef} className="fixed inset-0 z-[70] flex items-center justify-center px-4"
       style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(var(--glass-blur-sm))' }}
       onMouseDown={(e) => { if (e.target === overlayRef.current) onClose(); }}>
-      <div className="w-full max-w-sm max-h-[85vh] overflow-y-auto rounded-2xl p-6 shadow-2xl animate-slide-up"
+      {/* FIX (flattened to match New Playlist dialog): flat --elevated-rgb
+          fill, no border, no gradient sheen, no backdrop-filter. */}
+      <div className="w-full max-w-sm max-h-[85vh] overflow-y-auto rounded-[24px] p-6 shadow-2xl animate-slide-up"
         style={{
-          background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))',
-          backdropFilter: 'blur(var(--glass-blur-lg)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))', border: '1px solid rgb(var(--fg-rgb) / var(--glass-border-alpha))', boxShadow: 'var(--shadow-panel)',
+          background: 'rgb(var(--elevated-rgb))', boxShadow: '0 16px 40px -10px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2)',
         }}>
         {/* FIX (close button disappears on scroll): this header used to be a
             plain child inside the same overflow-y-auto container as the rest
@@ -701,8 +702,12 @@ export function SettingsPanel({
         <div className="fixed inset-0 z-[1200] flex items-center justify-center px-4"
           style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(var(--glass-blur-sm))' }}
           onMouseDown={(e) => { if (e.currentTarget === e.target && !deleting) setConfirmingDeleteAll(false); }}>
-          <div className="w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-slide-up"
-            style={{ background: 'radial-gradient(130% 70% at 10% -12%, rgb(var(--fg-rgb) / calc(0.13 * var(--glass-sheen))), transparent 55%), linear-gradient(180deg, rgb(var(--fg-rgb) / calc(0.16 * var(--glass-sheen))), rgb(var(--fg-rgb) / 0) 30%), rgb(var(--surface-rgb) / var(--glass-surface-alpha))', backdropFilter: 'blur(var(--glass-blur-lg)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness, 1)) contrast(var(--glass-contrast, 1))', border: '1px solid rgba(239,68,68,0.25)', boxShadow: 'var(--shadow-panel)' }}>
+          {/* FIX (flattened to match New Playlist dialog): flat
+              --elevated-rgb fill, no gradient sheen, no backdrop-filter.
+              Kept the red-tinted border -- that's a danger cue for a
+              destructive action, not decorative glass. */}
+          <div className="w-full max-w-sm rounded-[24px] p-6 shadow-2xl animate-slide-up"
+            style={{ background: 'rgb(var(--elevated-rgb))', border: '1px solid rgba(239,68,68,0.25)', boxShadow: '0 16px 40px -10px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2)' }}>
             <div className="flex items-center gap-2.5 mb-2">
               <AlertTriangle size={18} className="text-red-400 shrink-0" />
               <h3 className="text-fg font-bold text-lg">Delete all songs?</h3>
