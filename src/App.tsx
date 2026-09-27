@@ -38,7 +38,7 @@ import {
   getPinnedIds, setPinned as dbSetPinned,
   getPlaylists, savePlaylist, deletePlaylist as dbDeletePlaylist,
   getPreferences, savePreferences,
-  recordHistoryEntry, incrementPlayCount, getHistory,
+  recordHistoryEntry, incrementPlayCount, getHistory, clearHistory,
   deleteSong as dbDeleteSong,
   clearAllSongs,
   updateSongsBatch,
@@ -1650,6 +1650,12 @@ export default function App() {
     player.setShuffle(playerState.shuffleMode === 'off' ? 'view' : 'off');
   }, [playerState.shuffleMode]);
 
+  const handleClearHistory = useCallback(async () => {
+    await clearHistory();
+    setHistory([]);
+    showToast('History cleared');
+  }, []);
+
   // Feature (Bulk multi-select actions in the library)
   const toggleSelectionMode = useCallback(() => {
     setSelectionMode((v) => !v);
@@ -2053,7 +2059,7 @@ export default function App() {
 
             {/* ── STATS VIEW ── */}
             {view === 'stats' ? (
-              <StatsScreen songs={songs} history={history} accentColor={accentColor} onPlaySong={handlePlay} listeningStats={listeningStats.stats} sessions={listeningStats.sessions} likedIds={likedIds} />
+              <StatsScreen songs={songs} history={history} accentColor={accentColor} onClearHistory={handleClearHistory} onPlaySong={handlePlay} listeningStats={listeningStats.stats} sessions={listeningStats.sessions} likedIds={likedIds} />
             ) : view === 'queue' ? (
               /* ── QUEUE VIEW ── */
               <QueuePanel
@@ -2087,28 +2093,13 @@ export default function App() {
                 {/* Playlist toolbar */}
                 {currentPlaylist && !selectionMode && (
                   <div className="flex items-center gap-2 px-4 py-2 shrink-0" style={{ borderBottom: '1px solid rgb(var(--fg-rgb) / 0.06)' }}>
-                    {/* BUG FIX (button text wrapping inside the pills): this
-                        row used to be one plain flex container with no
-                        overflow handling, so on a narrow phone screen the
-                        flex items shrank below the width their text needs
-                        and "Add Songs"/"Delete playlist" wrapped onto two
-                        lines inside their rounded pills -- cramped and
-                        unreadable. Action buttons now sit in their own
-                        `overflow-x-auto` strip with `shrink-0
-                        whitespace-nowrap` on each one, so they keep their
-                        natural size and the strip scrolls horizontally
-                        instead of squeezing text; the song count/select/
-                        sort controls stay outside it in a `shrink-0` group
-                        so they're always visible at the right edge rather
-                        than scrolling out of view with the actions. */}
-                    <div className="flex items-center gap-2 overflow-x-auto min-w-0" style={{ scrollbarWidth: 'none' }}>
                     {currentPlaylist.smart ? (
                       // Feature (Smart/rule-based playlists): manual "Add
                       // Songs" doesn't apply -- membership is rule-derived
                       // and gets recomputed every time this view opens, so
                       // instead this reopens the rule editor pre-filled.
                       <button onClick={() => setEditingSmartPlaylist(currentPlaylist)}
-                        className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-fg/5 hover:bg-fg/10 transition-colors shrink-0 whitespace-nowrap" style={{ color: accentColor }}>
+                        className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-fg/5 hover:bg-fg/10 transition-colors" style={{ color: accentColor }}>
                         <Pencil size={13} style={{ color: accentColor }} /> Edit rules
                       </button>
                     ) : (
@@ -2117,26 +2108,23 @@ export default function App() {
                           old "Like all" bulk button in this same toolbar slot
                           (Task 2 removed it). */
                       <button onClick={() => setShowAddSongs(true)}
-                        className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-fg/5 hover:bg-fg/10 transition-colors shrink-0 whitespace-nowrap" style={{ color: accentColor }}>
+                        className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-fg/5 hover:bg-fg/10 transition-colors" style={{ color: accentColor }}>
                         <Plus size={13} style={{ color: accentColor }} /> Add Songs
                       </button>
                     )}
                     <button onClick={() => requestDeletePlaylist(currentPlaylist.id)}
-                      className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-fg/5 hover:bg-red-500/15 hover:text-red-400 text-fg/50 transition-colors shrink-0 whitespace-nowrap">
+                      className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-fg/5 hover:bg-red-500/15 hover:text-red-400 text-fg/50 transition-colors">
                       <Trash2 size={13} /> Delete playlist
                     </button>
                     <button onClick={() => handleExportPlaylistM3U(currentPlaylist, filtered)}
-                      className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-fg/5 hover:bg-fg/10 text-fg/50 hover:text-fg transition-colors shrink-0 whitespace-nowrap" title="Export as M3U playlist">
+                      className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-fg/5 hover:bg-fg/10 text-fg/50 hover:text-fg transition-colors" title="Export as M3U playlist">
                       <Download size={13} /> Export
                     </button>
-                    </div>
-                    <div className="flex items-center gap-2 ml-auto shrink-0">
-                      <span className="text-fg/30 text-xs whitespace-nowrap">{filtered.length} songs</span>
-                      <button onClick={toggleSelectionMode} className="btn-icon w-7 h-7 hover:bg-fg/10 rounded-lg shrink-0" title="Select songs">
-                        <CheckSquare size={14} className="text-fg/40" />
-                      </button>
-                      <SortMenu sortBy={sortBy} sortDir={sortDir} accentColor={accentColor} onChange={handleSortChange} />
-                    </div>
+                    <span className="text-fg/30 text-xs ml-auto">{filtered.length} songs</span>
+                    <button onClick={toggleSelectionMode} className="btn-icon w-7 h-7 hover:bg-fg/10 rounded-lg shrink-0" title="Select songs">
+                      <CheckSquare size={14} className="text-fg/40" />
+                    </button>
+                    <SortMenu sortBy={sortBy} sortDir={sortDir} accentColor={accentColor} onChange={handleSortChange} />
                   </div>
                 )}
 
